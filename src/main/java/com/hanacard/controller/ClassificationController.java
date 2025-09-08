@@ -101,18 +101,8 @@ public class ClassificationController {
             logger.info("향상된 상담 분류 요청 수신: sourceId={}, contentLength={}", 
                        request.getSourceId(), request.getConsultingContent().length());
 
-            // 상담 날짜/시간 설정
-            LocalDateTime consultingDateTime = LocalDateTime.now();
-            if (request.getConsultingDate() != null && request.getConsultingTime() != null) {
-                consultingDateTime = LocalDateTime.of(request.getConsultingDate(), request.getConsultingTime());
-            }
-
-            // 향상된 서비스를 통한 처리 및 저장
-            EnhancedClassificationResponse response = enhancedOpenAIService.processAndSaveConsultingContent(
-                request.getSourceId(),
-                request.getConsultingContent().trim(),
-                consultingDateTime
-            );
+            // 향상된 분류 서비스 호출
+            EnhancedClassificationResponse response = enhancedOpenAIService.processAndSaveConsultingContent(request);
 
             logger.info("향상된 상담 분류 완료: id={}, category={}, confidence={}", 
                        response.getId(), 

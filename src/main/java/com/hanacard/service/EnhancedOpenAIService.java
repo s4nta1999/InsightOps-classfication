@@ -3,6 +3,7 @@ package com.hanacard.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hanacard.constants.ConsultingCategories;
+import com.hanacard.dto.ClassificationRequest;
 import com.hanacard.dto.EnhancedClassificationResponse;
 import com.hanacard.entity.ConsultingClassification;
 import com.hanacard.repository.ConsultingClassificationRepository;
@@ -44,35 +45,33 @@ public class EnhancedOpenAIService {
      * 상담 내용을 향상된 방식으로 처리하고 저장
      */
     public EnhancedClassificationResponse processAndSaveConsultingContent(
-            String sourceId, 
-            String consultingContent,
-            LocalDateTime consultingDateTime) {
+            ClassificationRequest request) {
         
         long startTime = System.currentTimeMillis();
         
         try {
             logger.info("향상된 상담 처리 시작: sourceId={}, contentLength={}", 
-                       sourceId, consultingContent.length());
+                       request.getSourceId(), request.getConsultingContent().length());
             
             // 1. 향상된 프롬프트로 OpenAI API 호출
-            String prompt = buildEnhancedPrompt(consultingContent);
+            String prompt = buildEnhancedPrompt(request.getConsultingContent());
             String openAIResponse = callOpenAI(prompt);
             
             // 2. OpenAI 응답 파싱
             EnhancedClassificationResponse response = parseEnhancedResponse(openAIResponse);
             
             // 3. 기본 정보 설정
-            response.setSourceId(sourceId);
-            response.setConsultingContent(consultingContent);
-            response.setConsultingDate(consultingDateTime.toLocalDate());
-            response.setConsultingTime(consultingDateTime.toLocalTime());
+            response.setSourceId(request.getSourceId());
+            response.setConsultingContent(request.getConsultingContent());
+            response.setConsultingDate(request.getConsultingDate());
+            response.setConsultingTime(request.getConsultingTime());
             
             // 4. 처리 시간 계산
             double processingTime = (System.currentTimeMillis() - startTime) / 1000.0;
             response.setProcessingTime(processingTime);
             
             // 5. 데이터베이스에 저장
-            ConsultingClassification entity = mapToEntity(response);
+            ConsultingClassification entity = mapToEntity(response, request);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
             
@@ -89,7 +88,7 @@ public class EnhancedOpenAIService {
             return response;
             
         } catch (Exception e) {
-            logger.error("향상된 상담 처리 중 오류 발생: sourceId={}", sourceId, e);
+            logger.error("향상된 상담 처리 중 오류 발생: sourceId={}", request.getSourceId(), e);
             throw new RuntimeException("상담 처리 중 오류가 발생했습니다.", e);
         }
     }
@@ -288,25 +287,25 @@ public class EnhancedOpenAIService {
     /**
      * 응답을 엔티티로 매핑
      */
-    private ConsultingClassification mapToEntity(EnhancedClassificationResponse response) {
+    private ConsultingClassification mapToEntity(EnhancedClassificationResponse response, ClassificationRequest request) {
         ConsultingClassification entity = new ConsultingClassification();
         
+        // 기본 정보 설정
         entity.setSourceId(response.getSourceId());
         entity.setConsultingContent(response.getConsultingContent());
         entity.setProcessingTime(response.getProcessingTime());
         entity.setConsultingDate(response.getConsultingDate());
         entity.setConsultingTime(response.getConsultingTime());
         
-        // JSONB 필드들을 JSON 문자열로 변환
+        // 원본 데이터 직접 매핑 (voc_raw → voc_normalized)
+        entity.setClientGender(request.getClientGender());
+        entity.setClientAge(request.getClientAge());
+        entity.setConsultingTurns(request.getConsultingTurns());
+        entity.setConsultingLength(request.getConsultingLength());
+        
+        // AI 분석 결과만 JSON으로 저장
         try {
-            // analysis_result에 전체 응답을 저장
             entity.setAnalysisResult(objectMapper.writeValueAsString(response));
-            
-            // metadata에 추가 정보 저장
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("version", "2.0.0");
-            metadata.put("processing_timestamp", LocalDateTime.now().toString());
-            entity.setMetadata(objectMapper.writeValueAsString(metadata));
         } catch (Exception e) {
             logger.error("JSON 변환 실패", e);
             throw new RuntimeException("JSON 변환 실패", e);

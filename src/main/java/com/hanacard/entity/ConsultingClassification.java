@@ -13,7 +13,7 @@ import java.time.LocalTime;
  * 일반 컬럼과 JSONB를 혼합한 하이브리드 구조
  */
 @Entity
-@Table(name = "consulting_classifications")
+@Table(name = "voc_normalized")
 public class ConsultingClassification {
     
     @Id
@@ -35,18 +35,28 @@ public class ConsultingClassification {
     @Column(name = "consulting_time")
     private LocalTime consultingTime;
     
+    // 원본 데이터 컬럼들 (voc_raw에서 직접 매핑)
+    @Column(name = "client_gender", length = 10)
+    private String clientGender;
+    
+    @Column(name = "client_age", length = 10)
+    private String clientAge;
+    
+    @Column(name = "consulting_turns")
+    private Integer consultingTurns;
+    
+    @Column(name = "consulting_length")
+    private Integer consultingLength;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    // TEXT 컬럼들 (JSON 문자열로 저장)
+    // AI 분석 결과만 JSON으로 저장
     @Column(name = "analysis_result", nullable = false, columnDefinition = "TEXT")
     private String analysisResult; // JSON 문자열로 저장
-    
-    @Column(name = "metadata", columnDefinition = "TEXT")
-    private String metadata; // JSON 문자열로 저장
     
     // 생성자
     public ConsultingClassification() {}
@@ -105,6 +115,38 @@ public class ConsultingClassification {
         this.consultingTime = consultingTime;
     }
     
+    public String getClientGender() {
+        return clientGender;
+    }
+    
+    public void setClientGender(String clientGender) {
+        this.clientGender = clientGender;
+    }
+    
+    public String getClientAge() {
+        return clientAge;
+    }
+    
+    public void setClientAge(String clientAge) {
+        this.clientAge = clientAge;
+    }
+    
+    public Integer getConsultingTurns() {
+        return consultingTurns;
+    }
+    
+    public void setConsultingTurns(Integer consultingTurns) {
+        this.consultingTurns = consultingTurns;
+    }
+    
+    public Integer getConsultingLength() {
+        return consultingLength;
+    }
+    
+    public void setConsultingLength(Integer consultingLength) {
+        this.consultingLength = consultingLength;
+    }
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -127,14 +169,6 @@ public class ConsultingClassification {
     
     public void setAnalysisResult(String analysisResult) {
         this.analysisResult = analysisResult;
-    }
-    
-    public String getMetadata() {
-        return metadata;
-    }
-    
-    public void setMetadata(String metadata) {
-        this.metadata = metadata;
     }
     
     // 편의 메서드들

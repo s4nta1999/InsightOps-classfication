@@ -28,7 +28,18 @@ public class ClassificationRequest {
     @JsonProperty("consulting_time")
     private LocalTime consultingTime;
 
-    private Metadata metadata;
+    // 원본 데이터 필드들 (voc_raw에서 직접 매핑)
+    @JsonProperty("client_gender")
+    private String clientGender;
+
+    @JsonProperty("client_age")
+    private String clientAge;
+
+    @JsonProperty("consulting_turns")
+    private Integer consultingTurns;
+
+    @JsonProperty("consulting_length")
+    private Integer consultingLength;
 
     // 생성자
     public ClassificationRequest() {}
@@ -71,42 +82,36 @@ public class ClassificationRequest {
         this.consultingTime = consultingTime;
     }
 
-    public Metadata getMetadata() {
-        return metadata;
+    public String getClientGender() {
+        return clientGender;
     }
 
-    public void setMetadata(Metadata metadata) {
-        this.metadata = metadata;
+    public void setClientGender(String clientGender) {
+        this.clientGender = clientGender;
     }
 
-    /**
-     * 메타데이터 클래스 (client_gender, client_age 제거됨)
-     */
-    public static class Metadata {
-        @JsonProperty("consulting_turns")
-        private String consultingTurns;
-
-        @JsonProperty("consulting_length")
-        private Integer consultingLength;
-
-        // 생성자
-        public Metadata() {}
-
-        // Getter & Setter
-        public String getConsultingTurns() {
-            return consultingTurns;
-        }
-
-        public void setConsultingTurns(String consultingTurns) {
-            this.consultingTurns = consultingTurns;
-        }
-
-        public Integer getConsultingLength() {
-            return consultingLength;
-        }
-
-        public void setConsultingLength(Integer consultingLength) {
-            this.consultingLength = consultingLength;
-        }
+    public String getClientAge() {
+        return clientAge;
     }
+
+    public void setClientAge(String clientAge) {
+        this.clientAge = clientAge;
+    }
+
+    public Integer getConsultingTurns() {
+        return consultingTurns;
+    }
+
+    public void setConsultingTurns(Integer consultingTurns) {
+        this.consultingTurns = consultingTurns;
+    }
+
+    public Integer getConsultingLength() {
+        return consultingLength;
+    }
+
+    public void setConsultingLength(Integer consultingLength) {
+        this.consultingLength = consultingLength;
+    }
+
 }
