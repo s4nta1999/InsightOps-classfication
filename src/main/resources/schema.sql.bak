@@ -1,0 +1,18 @@
+-- 상담 분류 결과 테이블
+CREATE TABLE IF NOT EXISTS consulting_classifications (
+    id BIGSERIAL PRIMARY KEY,
+    source_id VARCHAR(100) NOT NULL,
+    consulting_content TEXT NOT NULL,
+    processing_time DECIMAL(10,3),
+    consulting_date DATE,
+    consulting_time TIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    analysis_result JSONB NOT NULL,
+    metadata JSONB
+);
+
+-- 기본 인덱스만 생성
+CREATE INDEX IF NOT EXISTS idx_source_id ON consulting_classifications(source_id);
+CREATE INDEX IF NOT EXISTS idx_created_at ON consulting_classifications(created_at);
+CREATE INDEX IF NOT EXISTS idx_consulting_date ON consulting_classifications(consulting_date);

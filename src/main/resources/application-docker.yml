@@ -1,0 +1,58 @@
+spring:
+  # PostgreSQL 데이터베이스 설정 (Docker 환경)
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/hanacard_db}
+    username: ${SPRING_DATASOURCE_USERNAME:hanacard_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:hanacard_password}
+    driver-class-name: org.postgresql.Driver
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: false  # 프로덕션에서는 SQL 로그 비활성화
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 20
+          fetch_size: 20
+    
+    # 데이터베이스 초기화
+    defer-datasource-initialization: true
+  
+  # SQL 초기화 비활성화 (JPA가 자동으로 테이블 생성)
+  sql:
+    init:
+      mode: never
+
+# OpenAI 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL:gpt-4}
+    timeout: 30000
+
+# 서버 설정
+server:
+  port: ${SERVER_PORT:8080}
+
+# 로깅 설정 (프로덕션 레벨)
+logging:
+  level:
+    com.hanacard: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

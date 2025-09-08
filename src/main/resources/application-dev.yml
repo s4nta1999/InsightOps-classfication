@@ -1,0 +1,67 @@
+spring:
+  # H2 Database 설정 (개발 환경)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true  # 개발환경에서는 SQL 로그 활성화
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+          fetch_size: 20
+    
+    # 데이터베이스 초기화
+    defer-datasource-initialization: true
+  
+  # H2 Console (개발용)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # SQL 초기화
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+# OpenAI 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your-api-key-here}
+    model: ${OPENAI_MODEL:gpt-4}
+    timeout: 30000
+
+# 서버 설정
+server:
+  port: 8080
+
+# 로깅 설정 (개발 레벨)
+logging:
+  level:
+    com.hanacard: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

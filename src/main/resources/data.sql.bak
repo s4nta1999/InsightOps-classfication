@@ -1,0 +1,102 @@
+-- 샘플 상담 분류 데이터 삽입
+INSERT INTO consulting_classifications (
+    source_id, 
+    consulting_content, 
+    processing_time, 
+    consulting_date, 
+    consulting_time, 
+    analysis_result, 
+    metadata
+) VALUES (
+    'SAMPLE_001',
+    '안녕하세요. 어제 지하철에서 지갑을 잃어버렸는데, 그 안에 하나카드가 들어있었어요. 급하게 차단하고 새 카드를 발급받고 싶습니다.',
+    2.5,
+    CURRENT_DATE,
+    CURRENT_TIME,
+    '{
+        "classification": {
+            "category": "도난/분실 신청/해제",
+            "confidence": 0.98,
+            "alternative_categories": [
+                {"category": "카드 차단", "confidence": 0.02}
+            ]
+        },
+        "analysis": {
+            "problem_situation": "고객이 지하철에서 지갑을 분실하여 하나카드가 포함된 상황",
+            "solution_approach": "즉시 카드 차단 처리 후 재발급 신청을 통한 신규 카드 발급",
+            "expected_outcome": "보안 위험 제거 및 새로운 카드로 정상적인 결제 서비스 이용 가능",
+            "urgency_level": "high",
+            "priority_score": 9.5
+        },
+        "extracted_info": {
+            "card_type": "하나카드",
+            "issue_type": "분실",
+            "location": "지하철",
+            "client_emotion": "긴급함"
+        }
+    }',
+    '{
+        "client_info": {
+            "gender": "여성",
+            "age_group": "30대",
+            "consulting_turns": "1회",
+            "consulting_length": 5
+        },
+        "system_info": {
+            "api_version": "2.0.0",
+            "model_version": "gpt-4",
+            "processing_environment": "development"
+        }
+    }'
+);
+
+INSERT INTO consulting_classifications (
+    source_id, 
+    consulting_content, 
+    processing_time, 
+    consulting_date, 
+    consulting_time, 
+    analysis_result, 
+    metadata
+) VALUES (
+    'SAMPLE_002',
+    '카드 이용내역을 확인하고 싶습니다. 지난 달에 어디서 얼마를 썼는지 알 수 있나요?',
+    1.8,
+    CURRENT_DATE,
+    CURRENT_TIME,
+    '{
+        "classification": {
+            "category": "이용내역 안내",
+            "confidence": 0.95,
+            "alternative_categories": [
+                {"category": "서비스 이용방법 안내", "confidence": 0.05}
+            ]
+        },
+        "analysis": {
+            "problem_situation": "고객이 카드 이용내역 조회를 원하는 상황",
+            "solution_approach": "카드 이용내역 조회 방법 안내 및 상세 내역 제공",
+            "expected_outcome": "고객이 카드 이용내역을 명확하게 파악하여 재무 관리 가능",
+            "urgency_level": "low",
+            "priority_score": 3.0
+        },
+        "extracted_info": {
+            "card_type": "하나카드",
+            "issue_type": "조회",
+            "location": "이용내역",
+            "client_emotion": "평온함"
+        }
+    }',
+    '{
+        "client_info": {
+            "gender": "남성",
+            "age_group": "40대",
+            "consulting_turns": "1회",
+            "consulting_length": 3
+        },
+        "system_info": {
+            "api_version": "2.0.0",
+            "model_version": "gpt-4",
+            "processing_environment": "development"
+        }
+    }'
+);
