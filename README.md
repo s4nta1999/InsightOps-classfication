@@ -126,7 +126,7 @@ Dockerfile                 # Docker 이미지 빌드
 
 ## 🗄 데이터베이스 구조
 
-### consulting_classifications 테이블
+### voc_normalized 테이블
 | 컬럼명 | 타입 | 설명 |
 |--------|------|------|
 | `id` | BIGINT | 고유 식별자 (Primary Key) |
@@ -135,10 +135,13 @@ Dockerfile                 # Docker 이미지 빌드
 | `processing_time` | DOUBLE | AI 처리 시간 (초) |
 | `consulting_date` | DATE | 상담 날짜 |
 | `consulting_time` | TIME | 상담 시간 |
+| `client_gender` | VARCHAR(10) | 고객 성별 |
+| `client_age` | VARCHAR(10) | 고객 연령대 |
+| `consulting_turns` | INTEGER | 상담 턴 수 |
+| `consulting_length` | INTEGER | 상담 길이 |
 | `created_at` | TIMESTAMP | 레코드 생성 시간 |
 | `updated_at` | TIMESTAMP | 레코드 수정 시간 |
-| `analysis_result` | TEXT | **분석 결과 (JSON 문자열)** |
-| `metadata` | TEXT | **메타데이터 (JSON 문자열)** |
+| `analysis_result` | TEXT | **AI 분석 결과 (JSON 문자열)** |
 
 ### 📊 analysis_result JSON 구조
 ```json
@@ -223,10 +226,10 @@ curl -X POST http://localhost:8082/api/enhanced-classify \
     "consulting_content": "카드 도난 신고하고 싶습니다.",
     "consulting_date": "2025-01-15",
     "consulting_time": "14:30",
-    "metadata": {
-      "consulting_turns": "40",
-      "consulting_length": 202
-    }
+    "client_gender": "여자",
+    "client_age": "30대",
+    "consulting_turns": 40,
+    "consulting_length": 202
   }'
 ```
 
