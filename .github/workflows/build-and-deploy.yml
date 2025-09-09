@@ -63,16 +63,12 @@ jobs:
             index.docker.io/${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.TAG }}
             index.docker.io/${{ env.DOCKER_IMAGE }}:latest
 
-      # Azure CLI를 사용한 배포
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy to Azure App Service (container)
+      # Publish Profile로 인증하므로 azure/login 불필요
+      - name: Deploy to Azure Web App (container)
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
           images: index.docker.io/${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.TAG }}
 
       - name: Post logout Docker Hub
@@ -83,4 +79,4 @@ jobs:
         run: |
           echo "Waiting for deployment to complete..."
           sleep 30
-          curl -f https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net/api/health || exit 1
+          curl -f https://${{ secrets.AZURE_WEBAPP_NAME }}.koreacentral-01.azurewebsites.net/api/health || exit 1
