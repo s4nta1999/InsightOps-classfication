@@ -1,3 +1,4 @@
-CI/CD 테스트 파일
+CI/CD 테스트 파일 - 업데이트됨!
 생성 시간: $(date)
 이 파일이 변경되면 GitHub Actions가 자동으로 실행됩니다.
+Azure CLI 인증으로 배포 테스트 중...
