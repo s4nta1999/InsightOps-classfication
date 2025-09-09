@@ -3,6 +3,7 @@ package com.hanacard.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hanacard.constants.ConsultingCategories;
+import com.hanacard.dto.AnalysisResult;
 import com.hanacard.dto.ClassificationRequest;
 import com.hanacard.dto.EnhancedClassificationResponse;
 import com.hanacard.entity.ConsultingClassification;
@@ -217,38 +218,10 @@ public class EnhancedOpenAIService {
                 analysisInfo.setSolutionApproach(analysis.get("solution_approach").asText());
                 analysisInfo.setExpectedOutcome(analysis.get("expected_outcome").asText());
                 
-                if (analysis.has("urgency_level")) {
-                    analysisInfo.setUrgencyLevel(analysis.get("urgency_level").asText());
-                }
-                
-                if (analysis.has("priority_score")) {
-                    analysisInfo.setPriorityScore(analysis.get("priority_score").asDouble());
-                }
                 
                 response.setAnalysis(analysisInfo);
             }
             
-            // 추출 정보 파싱
-            if (root.has("extracted_info")) {
-                JsonNode extracted = root.get("extracted_info");
-                EnhancedClassificationResponse.ExtractedInfo extractedInfo = 
-                    new EnhancedClassificationResponse.ExtractedInfo();
-                
-                if (extracted.has("card_type")) {
-                    extractedInfo.setCardType(extracted.get("card_type").asText());
-                }
-                if (extracted.has("issue_type")) {
-                    extractedInfo.setIssueType(extracted.get("issue_type").asText());
-                }
-                if (extracted.has("location")) {
-                    extractedInfo.setLocation(extracted.get("location").asText());
-                }
-                if (extracted.has("client_emotion")) {
-                    extractedInfo.setClientEmotion(extracted.get("client_emotion").asText());
-                }
-                
-                response.setExtractedInfo(extractedInfo);
-            }
             
             return response;
             
@@ -303,14 +276,53 @@ public class EnhancedOpenAIService {
         entity.setConsultingTurns(request.getConsultingTurns());
         entity.setConsultingLength(request.getConsultingLength());
         
-        // AI 분석 결과만 JSON으로 저장
+        // 분류 결과를 별도 컬럼에 저장
+        if (response.getClassification() != null) {
+            entity.setConsultingCategory(response.getClassification().getCategory());
+        }
+        
+        // AI 분석 결과만 JSON으로 저장 (기본 정보 제외)
         try {
-            entity.setAnalysisResult(objectMapper.writeValueAsString(response));
+            AnalysisResult analysisResult = convertToAnalysisResult(response);
+            entity.setAnalysisResult(objectMapper.writeValueAsString(analysisResult));
         } catch (Exception e) {
             logger.error("JSON 변환 실패", e);
             throw new RuntimeException("JSON 변환 실패", e);
         }
         
         return entity;
+    }
+    
+    /**
+     * EnhancedClassificationResponse를 AnalysisResult로 변환
+     */
+    private AnalysisResult convertToAnalysisResult(EnhancedClassificationResponse response) {
+        // ClassificationInfo 변환
+        AnalysisResult.ClassificationInfo classificationInfo = new AnalysisResult.ClassificationInfo();
+        if (response.getClassification() != null) {
+            classificationInfo.setCategory(response.getClassification().getCategory());
+            classificationInfo.setConfidence(response.getClassification().getConfidence());
+            
+            // AlternativeCategory 배열 변환
+            if (response.getClassification().getAlternativeCategories() != null) {
+                AnalysisResult.AlternativeCategory[] altCategories = new AnalysisResult.AlternativeCategory[response.getClassification().getAlternativeCategories().length];
+                for (int i = 0; i < response.getClassification().getAlternativeCategories().length; i++) {
+                    altCategories[i] = new AnalysisResult.AlternativeCategory();
+                    altCategories[i].setCategory(response.getClassification().getAlternativeCategories()[i].getCategory());
+                    altCategories[i].setConfidence(response.getClassification().getAlternativeCategories()[i].getConfidence());
+                }
+                classificationInfo.setAlternativeCategories(altCategories);
+            }
+        }
+        
+        // AnalysisInfo 변환
+        AnalysisResult.AnalysisInfo analysisInfo = new AnalysisResult.AnalysisInfo();
+        if (response.getAnalysis() != null) {
+            analysisInfo.setProblemSituation(response.getAnalysis().getProblemSituation());
+            analysisInfo.setSolutionApproach(response.getAnalysis().getSolutionApproach());
+            analysisInfo.setExpectedOutcome(response.getAnalysis().getExpectedOutcome());
+        }
+        
+        return new AnalysisResult(classificationInfo, analysisInfo);
     }
 }

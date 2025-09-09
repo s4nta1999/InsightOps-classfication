@@ -102,6 +102,19 @@ python3 -m http.server 3000
 # http://localhost:3000
 ```
 
+### 📊 샘플 데이터 적재
+```bash
+# 1. 서비스 실행 후 데이터 적재
+cd data
+python3 load_sample_data.py
+
+# 2. 테스트용으로 일부 데이터만 적재
+python3 load_sample_data.py --max-files 10
+
+# 3. Docker Compose로 자동 데이터 적재
+docker-compose -f data/docker-compose-with-data.yml up -d
+```
+
 ## 📁 프로젝트 구조
 
 ```
@@ -139,33 +152,36 @@ Dockerfile                 # Docker 이미지 빌드
 | `client_age` | VARCHAR(10) | 고객 연령대 |
 | `consulting_turns` | INTEGER | 상담 턴 수 |
 | `consulting_length` | INTEGER | 상담 길이 |
+| `consulting_category` | VARCHAR(100) | **상담 카테고리 (별도 컬럼)** |
 | `created_at` | TIMESTAMP | 레코드 생성 시간 |
 | `updated_at` | TIMESTAMP | 레코드 수정 시간 |
-| `analysis_result` | TEXT | **AI 분석 결과 (JSON 문자열)** |
+| `analysis_result` | JSONB | **AI 분석 결과 (JSONB)** |
 
-### 📊 analysis_result JSON 구조
+### 📊 analysis_result JSON 구조 (간소화됨)
 ```json
 {
   "classification": {
-    "category": "도난/분실 신청/해제",
     "confidence": 0.95,
-    "alternative_categories": [...]
+    "alternative_categories": [
+      {
+        "category": "카드 정지/해제",
+        "confidence": 0.03
+      },
+      {
+        "category": "인증 관련",
+        "confidence": 0.02
+      }
+    ]
   },
   "analysis": {
     "problem_situation": "고객이 카드 도난 신고 후 정지 해제 요청",
     "solution_approach": "신분증 인증 후 카드 정지 해제 처리",
-    "expected_outcome": "카드 정상 사용 가능",
-    "urgency_level": "보통",
-    "priority_score": 7.5
-  },
-  "extracted_info": {
-    "card_type": "신용카드",
-    "issue_type": "도난 신고",
-    "location": "온라인",
-    "client_emotion": "걱정"
+    "expected_outcome": "카드 정상 사용 가능"
   }
 }
 ```
+
+**참고**: `category`는 `consulting_category` 컬럼에 별도 저장되므로 JSON에서 제거됨
 
 ## 🔧 개발 환경 설정
 

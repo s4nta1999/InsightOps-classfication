@@ -54,9 +54,13 @@ public class ConsultingClassification {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    // 분류 결과 (별도 컬럼으로 저장)
+    @Column(name = "consulting_category", length = 100)
+    private String consultingCategory;
+    
     // AI 분석 결과만 JSON으로 저장
-    @Column(name = "analysis_result", nullable = false, columnDefinition = "TEXT")
-    private String analysisResult; // JSON 문자열로 저장
+    @Column(name = "analysis_result", nullable = false, columnDefinition = "JSONB")
+    private String analysisResult; // JSONB로 저장
     
     // 생성자
     public ConsultingClassification() {}
@@ -169,6 +173,14 @@ public class ConsultingClassification {
     
     public void setAnalysisResult(String analysisResult) {
         this.analysisResult = analysisResult;
+    }
+    
+    public String getConsultingCategory() {
+        return consultingCategory;
+    }
+    
+    public void setConsultingCategory(String consultingCategory) {
+        this.consultingCategory = consultingCategory;
     }
     
     // 편의 메서드들

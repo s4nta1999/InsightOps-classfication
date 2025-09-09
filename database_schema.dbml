@@ -1,0 +1,59 @@
+// VOC 정규화 테이블 - 상담 분류 마이크로서비스
+// DBML (Database Markup Language) for dbdiagram.io
+
+Table voc_normalized {
+  id BIGINT [pk, increment, note: '고유 식별자 (Primary Key)']
+  source_id VARCHAR(100) [not null, note: '상담 소스 ID']
+  consulting_content TEXT [not null, note: '상담 내용 (원본 텍스트)']
+  processing_time DOUBLE [note: 'AI 처리 시간 (초)']
+  consulting_date DATE [note: '상담 날짜']
+  consulting_time TIME [note: '상담 시간']
+  client_gender VARCHAR(10) [note: '고객 성별']
+  client_age VARCHAR(10) [note: '고객 연령대']
+  consulting_turns INTEGER [note: '상담 턴 수']
+  consulting_length INTEGER [note: '상담 길이']
+  consulting_category VARCHAR(100) [note: '상담 카테고리 (별도 컬럼)']
+  created_at TIMESTAMP [default: `now()`, note: '레코드 생성 시간']
+  updated_at TIMESTAMP [default: `now()`, note: '레코드 수정 시간']
+  analysis_result JSONB [not null, note: 'AI 분석 결과 (JSONB)']
+
+  indexes {
+    (source_id) [name: 'idx_source_id']
+    (consulting_date) [name: 'idx_consulting_date']
+    (consulting_category) [name: 'idx_consulting_category']
+    (created_at) [name: 'idx_created_at']
+    (client_gender, client_age) [name: 'idx_client_info']
+    (analysis_result) [type: gin, name: 'idx_analysis_result_gin']
+  }
+}
+
+// JSON 구조 예시 (analysis_result 컬럼 내용)
+// {
+//   "classification": {
+//     "confidence": 0.95,
+//     "alternative_categories": [
+//       {
+//         "category": "카드 정지/해제",
+//         "confidence": 0.03
+//       },
+//       {
+//         "category": "인증 관련", 
+//         "confidence": 0.02
+//       }
+//     ]
+//   },
+//   "analysis": {
+//     "problem_situation": "고객이 카드 도난 신고 후 정지 해제 요청",
+//     "solution_approach": "신분증 인증 후 카드 정지 해제 처리",
+//     "expected_outcome": "카드 정상 사용 가능"
+//   }
+// }
+
+// 상담 카테고리 목록 (하드코딩된 상수)
+// - 도난/분실 신청/해제
+// - 카드 정지/해제
+// - 인증 관련
+// - 결제일 안내/변경
+// - 약관 안내
+// - 상품 안내
+// - 기타

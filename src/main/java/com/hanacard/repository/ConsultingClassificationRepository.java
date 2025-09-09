@@ -24,53 +24,28 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     
     List<ConsultingClassification> findByConsultingDate(LocalDate date);
     
+    // 카테고리별 조회 (별도 컬럼 활용)
+    List<ConsultingClassification> findByConsultingCategory(String consultingCategory);
+    
     // JSONB 기반 고급 쿼리들
     @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result->'classification'->>'category' = :category", nativeQuery = true)
+                   "WHERE consulting_category = :category", nativeQuery = true)
     List<ConsultingClassification> findByCategory(@Param("category") String category);
     
     @Query(value = "SELECT * FROM voc_normalized " +
                    "WHERE (analysis_result->'classification'->>'confidence')::numeric > :minConfidence", nativeQuery = true)
     List<ConsultingClassification> findByConfidenceGreaterThan(@Param("minConfidence") Double minConfidence);
     
-    @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result->'analysis'->>'urgency_level' = :urgencyLevel", nativeQuery = true)
-    List<ConsultingClassification> findByUrgencyLevel(@Param("urgencyLevel") String urgencyLevel);
-    
-    @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE (analysis_result->'analysis'->>'priority_score')::numeric > :minPriority", nativeQuery = true)
-    List<ConsultingClassification> findByPriorityGreaterThan(@Param("minPriority") Double minPriority);
-    
-    // 복합 조건 검색
-    @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result->'classification'->>'category' = :category " +
-                   "AND (analysis_result->'analysis'->>'priority_score')::numeric > :minPriority", nativeQuery = true)
-    List<ConsultingClassification> findByCategoryAndPriority(
-        @Param("category") String category, 
-        @Param("minPriority") Double minPriority);
-    
-    @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result->'analysis'->>'urgency_level' = :urgencyLevel " +
-                   "AND (analysis_result->'classification'->>'confidence')::numeric > :minConfidence", nativeQuery = true)
-    List<ConsultingClassification> findByUrgencyAndConfidence(
-        @Param("urgencyLevel") String urgencyLevel, 
-        @Param("minConfidence") Double minConfidence);
     
     // 통계 쿼리들
     @Query(value = "SELECT " +
-                   "analysis_result->'classification'->>'category' as category, " +
+                   "consulting_category as category, " +
                    "COUNT(*) as count " +
                    "FROM voc_normalized " +
-                   "GROUP BY analysis_result->'classification'->>'category' " +
+                   "GROUP BY consulting_category " +
                    "ORDER BY count DESC", nativeQuery = true)
     List<Object[]> getCategoryStatistics();
     
-    @Query(value = "SELECT " +
-                   "analysis_result->'analysis'->>'urgency_level' as urgency_level, " +
-                   "COUNT(*) as count " +
-                   "FROM voc_normalized " +
-                   "GROUP BY analysis_result->'analysis'->>'urgency_level'", nativeQuery = true)
-    List<Object[]> getUrgencyLevelStatistics();
     
     @Query(value = "SELECT " +
                    "DATE(created_at) as date, " +

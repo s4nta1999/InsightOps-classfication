@@ -196,23 +196,6 @@ public class ClassificationController {
     /**
      * 긴급도별 통계 조회 엔드포인트 (새로 추가)
      */
-    @GetMapping("/classify/statistics/urgency")
-    public ResponseEntity<ApiResponse<List<Object[]>>> getUrgencyStatistics() {
-        
-        try {
-            logger.info("긴급도별 통계 조회 요청");
-            
-            List<Object[]> statistics = repository.getUrgencyLevelStatistics();
-            
-            return ResponseEntity.ok(ApiResponse.success(statistics));
-            
-        } catch (Exception e) {
-            logger.error("긴급도별 통계 조회 중 오류 발생", e);
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("긴급도별 통계 조회 중 오류가 발생했습니다.", e.getMessage()));
-        }
-    }
 
     /**
      * 서비스 상태 확인 엔드포인트
