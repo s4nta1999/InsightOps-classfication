@@ -1,4 +1,17 @@
--- VOC 정규화 테이블 생성 (MySQL) - voc_raw 구조에 맞춤
+-- ============================================
+-- 하나카드 상담 분류 마이크로서비스 데이터베이스
+-- 데이터베이스명: normalization
+-- 테이블명: voc_normalized
+-- ============================================
+
+-- 1. 데이터베이스 생성
+CREATE DATABASE IF NOT EXISTS normalization
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE normalization;
+
+-- 2. 테이블 생성 (voc_raw 구조에 맞춤)
 CREATE TABLE IF NOT EXISTS voc_normalized (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     source_id VARCHAR(255) NOT NULL,
@@ -15,14 +28,14 @@ CREATE TABLE IF NOT EXISTS voc_normalized (
     analysis_result JSON NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 인덱스 생성
+-- 3. 인덱스 생성
 CREATE INDEX idx_source_id ON voc_normalized(source_id);
 CREATE INDEX idx_consulting_date ON voc_normalized(consulting_date);
 CREATE INDEX idx_consulting_category ON voc_normalized(consulting_category);
 CREATE INDEX idx_created_at ON voc_normalized(created_at);
 CREATE INDEX idx_client_info ON voc_normalized(client_gender, client_age);
 
--- MySQL JSON 함수 기반 인덱스 (MySQL 8.0+)
+-- 4. JSON 인덱스 (MySQL 8.0+)
 CREATE INDEX idx_category_json ON voc_normalized(
     (CAST(JSON_UNQUOTE(JSON_EXTRACT(analysis_result, '$.classification.category')) AS CHAR(100)))
 );
@@ -30,7 +43,7 @@ CREATE INDEX idx_confidence_json ON voc_normalized(
     (CAST(JSON_UNQUOTE(JSON_EXTRACT(analysis_result, '$.classification.confidence')) AS DECIMAL(3,2)))
 );
 
--- 테스트 데이터 삽입 (voc_raw 구조에 맞춤)
+-- 5. 테스트 데이터 삽입 (voc_raw 구조에 맞춤)
 INSERT INTO voc_normalized (
     source_id, consulting_date, client_gender, client_age, consulting_turns, consulting_length,
     consulting_content, processing_time, consulting_category, analysis_result
@@ -51,3 +64,25 @@ INSERT INTO voc_normalized (
         )
     )
 );
+
+-- 6. 확인
+SELECT 'normalization 데이터베이스 생성 완료!' as message;
+SELECT COUNT(*) as total_records FROM voc_normalized;
+
+-- 7. 테이블 구조 확인
+DESCRIBE voc_normalized;
+
+-- 8. 샘플 데이터 확인
+SELECT 
+    id,
+    source_id,
+    consulting_date,
+    client_gender,
+    client_age,
+    consulting_turns,
+    consulting_length,
+    consulting_category,
+    processing_time,
+    created_at
+FROM voc_normalized 
+LIMIT 5;

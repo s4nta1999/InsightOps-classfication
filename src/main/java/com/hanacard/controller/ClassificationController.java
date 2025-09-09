@@ -75,7 +75,6 @@ public class ClassificationController {
             response.setConfidence(result.getConfidence());
             response.setProcessingTime(processingTime);
             response.setConsultingDate(request.getConsultingDate());
-            response.setConsultingTime(request.getConsultingTime());
 
             logger.info("상담 분류 완료: sourceId={}, category={}, confidence={}, processingTime={}s", 
                        request.getSourceId(), result.getCategory(), result.getConfidence(), processingTime);
@@ -276,7 +275,6 @@ public class ClassificationController {
         response.setConsultingContent(entity.getConsultingContent());
         response.setProcessingTime(entity.getProcessingTime());
         response.setConsultingDate(entity.getConsultingDate());
-        response.setConsultingTime(entity.getConsultingTime());
         response.setCreatedAt(entity.getCreatedAt());
         
         // JSONB 파싱 로직은 별도 구현 필요

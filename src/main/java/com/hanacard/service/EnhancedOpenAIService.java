@@ -66,7 +66,6 @@ public class EnhancedOpenAIService {
             response.setSourceId(request.getSourceId());
             response.setConsultingContent(request.getConsultingContent());
             response.setConsultingDate(request.getConsultingDate());
-            response.setConsultingTime(request.getConsultingTime());
             
             // 4. 처리 시간 계산
             double processingTime = (System.currentTimeMillis() - startTime) / 1000.0;
@@ -269,12 +268,11 @@ public class EnhancedOpenAIService {
     private ConsultingClassification mapToEntity(EnhancedClassificationResponse response, ClassificationRequest request) {
         ConsultingClassification entity = new ConsultingClassification();
         
-        // 기본 정보 설정
-        entity.setSourceId(response.getSourceId());
-        entity.setConsultingContent(response.getConsultingContent());
+        // 기본 정보 설정 (voc_raw 구조에 맞춤)
+        entity.setSourceId(request.getSourceId());
+        entity.setConsultingContent(request.getConsultingContent());
         entity.setProcessingTime(response.getProcessingTime());
-        entity.setConsultingDate(response.getConsultingDate());
-        entity.setConsultingTime(response.getConsultingTime());
+        entity.setConsultingDate(request.getConsultingDate());
         
         // 원본 데이터 직접 매핑 (voc_raw → voc_normalized)
         entity.setClientGender(request.getClientGender());

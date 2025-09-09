@@ -2,13 +2,9 @@ package com.hanacard.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * 향상된 상담 분류 응답 DTO
@@ -29,12 +25,8 @@ public class EnhancedClassificationResponse {
     private Double processingTime;
     
     @JsonProperty("consulting_date")
-    @JsonSerialize(using = LocalDateSerializer.class)
-    private LocalDate consultingDate;
-    
-    @JsonProperty("consulting_time")
-    @JsonSerialize(using = LocalTimeSerializer.class)
-    private LocalTime consultingTime;
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    private LocalDateTime consultingDate;
     
     @JsonProperty("created_at")
     @JsonSerialize(using = LocalDateTimeSerializer.class)
@@ -83,20 +75,12 @@ public class EnhancedClassificationResponse {
         this.processingTime = processingTime;
     }
     
-    public LocalDate getConsultingDate() {
+    public LocalDateTime getConsultingDate() {
         return consultingDate;
     }
     
-    public void setConsultingDate(LocalDate consultingDate) {
+    public void setConsultingDate(LocalDateTime consultingDate) {
         this.consultingDate = consultingDate;
-    }
-    
-    public LocalTime getConsultingTime() {
-        return consultingTime;
-    }
-    
-    public void setConsultingTime(LocalTime consultingTime) {
-        this.consultingTime = consultingTime;
     }
     
     public LocalDateTime getCreatedAt() {

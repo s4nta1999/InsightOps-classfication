@@ -1,16 +1,13 @@
 package com.hanacard.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
- * 상담 분류 결과 엔티티
+ * 상담 분류 결과 엔티티 (voc_raw 구조에 맞춤)
  * 일반 컬럼과 MySQL JSON을 혼합한 하이브리드 구조
  */
 @Entity
@@ -21,33 +18,29 @@ public class ConsultingClassification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "source_id", nullable = false, length = 100)
+    @Column(name = "source_id", nullable = false, length = 255)
     private String sourceId;
+    
+    @Column(name = "consulting_date", nullable = false)
+    private LocalDateTime consultingDate;
+    
+    @Column(name = "client_gender", nullable = false, length = 10)
+    private String clientGender;
+    
+    @Column(name = "client_age", nullable = false)
+    private Integer clientAge;
+    
+    @Column(name = "consulting_turns", nullable = false)
+    private Integer consultingTurns;
+    
+    @Column(name = "consulting_length", nullable = false)
+    private Integer consultingLength;
     
     @Column(name = "consulting_content", nullable = false, columnDefinition = "TEXT")
     private String consultingContent;
     
     @Column(name = "processing_time")
     private Double processingTime;
-    
-    @Column(name = "consulting_date")
-    private LocalDate consultingDate;
-    
-    @Column(name = "consulting_time")
-    private LocalTime consultingTime;
-    
-    // 원본 데이터 컬럼들 (voc_raw에서 직접 매핑)
-    @Column(name = "client_gender", length = 10)
-    private String clientGender;
-    
-    @Column(name = "client_age", length = 10)
-    private String clientAge;
-    
-    @Column(name = "consulting_turns")
-    private Integer consultingTurns;
-    
-    @Column(name = "consulting_length")
-    private Integer consultingLength;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -105,20 +98,12 @@ public class ConsultingClassification {
         this.processingTime = processingTime;
     }
     
-    public LocalDate getConsultingDate() {
+    public LocalDateTime getConsultingDate() {
         return consultingDate;
     }
     
-    public void setConsultingDate(LocalDate consultingDate) {
+    public void setConsultingDate(LocalDateTime consultingDate) {
         this.consultingDate = consultingDate;
-    }
-    
-    public LocalTime getConsultingTime() {
-        return consultingTime;
-    }
-    
-    public void setConsultingTime(LocalTime consultingTime) {
-        this.consultingTime = consultingTime;
     }
     
     public String getClientGender() {
@@ -129,11 +114,11 @@ public class ConsultingClassification {
         this.clientGender = clientGender;
     }
     
-    public String getClientAge() {
+    public Integer getClientAge() {
         return clientAge;
     }
     
-    public void setClientAge(String clientAge) {
+    public void setClientAge(Integer clientAge) {
         this.clientAge = clientAge;
     }
     

@@ -3,43 +3,44 @@ package com.hanacard.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 /**
- * 상담 분류 요청 DTO
+ * 상담 분류 요청 DTO (voc_raw 구조에 맞춤)
  */
 public class ClassificationRequest {
 
     @NotBlank(message = "source_id는 필수입니다.")
-    @Size(max = 100, message = "source_id는 100자를 초과할 수 없습니다.")
+    @Size(max = 255, message = "source_id는 255자를 초과할 수 없습니다.")
     @JsonProperty("source_id")
     private String sourceId;
+
+    @NotNull(message = "상담 날짜/시간은 필수입니다.")
+    @JsonProperty("consulting_date")
+    private LocalDateTime consultingDate;
+
+    @NotBlank(message = "고객 성별은 필수입니다.")
+    @JsonProperty("client_gender")
+    private String clientGender;
+
+    @NotNull(message = "고객 연령대는 필수입니다.")
+    @JsonProperty("client_age")
+    private Integer clientAge;
+
+    @NotNull(message = "상담 턴 수는 필수입니다.")
+    @JsonProperty("consulting_turns")
+    private Integer consultingTurns;
+
+    @NotNull(message = "상담 길이는 필수입니다.")
+    @JsonProperty("consulting_length")
+    private Integer consultingLength;
 
     @NotBlank(message = "상담 내용은 필수입니다.")
     @Size(max = 10000, message = "상담 내용은 10000자를 초과할 수 없습니다.")
     @JsonProperty("consulting_content")
     private String consultingContent;
-
-    @JsonProperty("consulting_date")
-    private LocalDate consultingDate;
-
-    @JsonProperty("consulting_time")
-    private LocalTime consultingTime;
-
-    // 원본 데이터 필드들 (voc_raw에서 직접 매핑)
-    @JsonProperty("client_gender")
-    private String clientGender;
-
-    @JsonProperty("client_age")
-    private String clientAge;
-
-    @JsonProperty("consulting_turns")
-    private Integer consultingTurns;
-
-    @JsonProperty("consulting_length")
-    private Integer consultingLength;
 
     // 생성자
     public ClassificationRequest() {}
@@ -58,28 +59,12 @@ public class ClassificationRequest {
         this.sourceId = sourceId;
     }
 
-    public String getConsultingContent() {
-        return consultingContent;
-    }
-
-    public void setConsultingContent(String consultingContent) {
-        this.consultingContent = consultingContent;
-    }
-
-    public LocalDate getConsultingDate() {
+    public LocalDateTime getConsultingDate() {
         return consultingDate;
     }
 
-    public void setConsultingDate(LocalDate consultingDate) {
+    public void setConsultingDate(LocalDateTime consultingDate) {
         this.consultingDate = consultingDate;
-    }
-
-    public LocalTime getConsultingTime() {
-        return consultingTime;
-    }
-
-    public void setConsultingTime(LocalTime consultingTime) {
-        this.consultingTime = consultingTime;
     }
 
     public String getClientGender() {
@@ -90,11 +75,11 @@ public class ClassificationRequest {
         this.clientGender = clientGender;
     }
 
-    public String getClientAge() {
+    public Integer getClientAge() {
         return clientAge;
     }
 
-    public void setClientAge(String clientAge) {
+    public void setClientAge(Integer clientAge) {
         this.clientAge = clientAge;
     }
 
@@ -112,6 +97,14 @@ public class ClassificationRequest {
 
     public void setConsultingLength(Integer consultingLength) {
         this.consultingLength = consultingLength;
+    }
+
+    public String getConsultingContent() {
+        return consultingContent;
+    }
+
+    public void setConsultingContent(String consultingContent) {
+        this.consultingContent = consultingContent;
     }
 
 }

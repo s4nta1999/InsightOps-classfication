@@ -2,8 +2,7 @@ package com.hanacard.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 /**
  * 상담 분류 응답 DTO
@@ -22,10 +21,7 @@ public class ClassificationResponse {
     private Double processingTime;
 
     @JsonProperty("consulting_date")
-    private LocalDate consultingDate;
-
-    @JsonProperty("consulting_time")
-    private LocalTime consultingTime;
+    private LocalDateTime consultingDate;
 
     // 생성자
     public ClassificationResponse() {}
@@ -70,19 +66,11 @@ public class ClassificationResponse {
         this.processingTime = processingTime;
     }
 
-    public LocalDate getConsultingDate() {
+    public LocalDateTime getConsultingDate() {
         return consultingDate;
     }
 
-    public void setConsultingDate(LocalDate consultingDate) {
+    public void setConsultingDate(LocalDateTime consultingDate) {
         this.consultingDate = consultingDate;
-    }
-
-    public LocalTime getConsultingTime() {
-        return consultingTime;
-    }
-
-    public void setConsultingTime(LocalTime consultingTime) {
-        this.consultingTime = consultingTime;
     }
 }
