@@ -1,10 +1,10 @@
 spring:
-  # H2 Database 설정 (개발 환경)
+  # MySQL Database 설정 (개발 환경)
   datasource:
-    url: jdbc:h2:mem:testdb
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+    url: jdbc:mysql://mysql:3306/normalization_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: hanacard_user
+    password: hanacard_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
   
   # JPA 설정
   jpa:
@@ -13,7 +13,7 @@ spring:
     show-sql: true  # 개발환경에서는 SQL 로그 활성화
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
         jdbc:
           batch_size: 20
@@ -39,7 +39,7 @@ spring:
 openai:
   api:
     key: ${OPENAI_API_KEY:your-api-key-here}
-    model: ${OPENAI_MODEL:gpt-4}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
     timeout: 30000
 
 # 서버 설정

@@ -8,8 +8,8 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-# 애플리케이션 빌드
-RUN mvn clean package -DskipTests
+# 애플리케이션 빌드 (CI/CD에서는 이미 빌드된 JAR 사용)
+COPY target/microservice-classification-1.0.0.jar target/
 
 # 실행 단계
 FROM eclipse-temurin:17-jre

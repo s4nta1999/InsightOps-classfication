@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class EnhancedOpenAIService {
     @Value("${openai.api.key}")
     private String apiKey;
     
-    @Value("${openai.model:gpt-4}")
+    @Value("${openai.model:gpt-4o-mini}")
     private String model;
     
     @Autowired
@@ -144,7 +145,10 @@ public class EnhancedOpenAIService {
      */
     private String callOpenAI(String prompt) {
         try {
-            OpenAiService service = new OpenAiService(apiKey);
+            logger.info("OpenAI API 호출 시작 - 모델: {}, 프롬프트 길이: {}", model, prompt.length());
+            
+            // 타임아웃 설정 (60초)
+            OpenAiService service = new OpenAiService(apiKey, Duration.ofSeconds(60));
             
             ChatCompletionRequest request = ChatCompletionRequest.builder()
                 .model(model)
@@ -153,14 +157,16 @@ public class EnhancedOpenAIService {
                 .temperature(0.3)
                 .build();
             
+            logger.info("OpenAI API 요청 전송 중...");
             String response = service.createChatCompletion(request)
                 .getChoices().get(0).getMessage().getContent();
             
-            logger.debug("OpenAI API 응답: {}", response);
+            logger.info("OpenAI API 응답 수신 완료 - 응답 길이: {}", response.length());
             return response;
             
         } catch (Exception e) {
-            logger.error("OpenAI API 호출 중 오류 발생", e);
+            logger.error("OpenAI API 호출 중 오류 발생 - API Key: {}...", 
+                        apiKey != null ? apiKey.substring(0, Math.min(10, apiKey.length())) : "null", e);
             throw new RuntimeException("OpenAI API 호출 실패", e);
         }
     }
@@ -284,6 +290,7 @@ public class EnhancedOpenAIService {
         // AI 분석 결과만 JSON으로 저장 (기본 정보 제외)
         try {
             AnalysisResult analysisResult = convertToAnalysisResult(response);
+            // JSONB 컬럼에는 JSON 객체를 직접 저장
             entity.setAnalysisResult(objectMapper.writeValueAsString(analysisResult));
         } catch (Exception e) {
             logger.error("JSON 변환 실패", e);

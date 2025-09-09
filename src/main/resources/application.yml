@@ -17,7 +17,7 @@ server:
 openai:
   api:
     key: ${OPENAI_API_KEY:your-api-key-here}
-    model: ${OPENAI_MODEL:gpt-4}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
     timeout: 30000
 
 # 로깅 설정

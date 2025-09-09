@@ -2,7 +2,8 @@ package com.hanacard.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,7 +11,7 @@ import java.time.LocalTime;
 
 /**
  * 상담 분류 결과 엔티티
- * 일반 컬럼과 JSONB를 혼합한 하이브리드 구조
+ * 일반 컬럼과 MySQL JSON을 혼합한 하이브리드 구조
  */
 @Entity
 @Table(name = "voc_normalized")
@@ -59,8 +60,9 @@ public class ConsultingClassification {
     private String consultingCategory;
     
     // AI 분석 결과만 JSON으로 저장
-    @Column(name = "analysis_result", nullable = false, columnDefinition = "JSONB")
-    private String analysisResult; // JSONB로 저장
+    @Column(name = "analysis_result", nullable = false, columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String analysisResult; // MySQL JSON으로 저장
     
     // 생성자
     public ConsultingClassification() {}

@@ -1,37 +1,41 @@
 spring:
-  # PostgreSQL 데이터베이스 설정 (Docker 환경)
+  # MySQL 데이터베이스 설정 (Docker 환경)
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/hanacard_db}
-    username: ${SPRING_DATASOURCE_USERNAME:hanacard_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:hanacard_password}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:mysql://mysql:3306/normalization_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: hanacard_user
+    password: hanacard_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
   
   # JPA 설정
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
-    show-sql: false  # 프로덕션에서는 SQL 로그 비활성화
+      ddl-auto: update
+    show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: false
         jdbc:
           batch_size: 20
           fetch_size: 20
     
-    # 데이터베이스 초기화
-    defer-datasource-initialization: true
-  
-  # SQL 초기화 비활성화 (JPA가 자동으로 테이블 생성)
+  # 데이터베이스 초기화 설정
+  defer-datasource-initialization: false
   sql:
     init:
-      mode: never
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: true
 
 # OpenAI 설정
 openai:
   api:
     key: ${OPENAI_API_KEY}
-    model: ${OPENAI_MODEL:gpt-4}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
     timeout: 30000
 
 # 서버 설정

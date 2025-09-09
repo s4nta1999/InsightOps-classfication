@@ -12,7 +12,7 @@ import java.util.Optional;
 
 /**
  * 상담 분류 결과 Repository
- * JSONB 기반의 고급 쿼리 메서드들 포함
+ * MySQL JSON 기반의 고급 쿼리 메서드들 포함
  */
 @Repository
 public interface ConsultingClassificationRepository extends JpaRepository<ConsultingClassification, Long> {
@@ -27,13 +27,13 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     // 카테고리별 조회 (별도 컬럼 활용)
     List<ConsultingClassification> findByConsultingCategory(String consultingCategory);
     
-    // JSONB 기반 고급 쿼리들
+    // MySQL JSON 기반 고급 쿼리들
     @Query(value = "SELECT * FROM voc_normalized " +
                    "WHERE consulting_category = :category", nativeQuery = true)
     List<ConsultingClassification> findByCategory(@Param("category") String category);
     
     @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE (analysis_result->'classification'->>'confidence')::numeric > :minConfidence", nativeQuery = true)
+                   "WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(analysis_result, '$.classification.confidence')) AS DECIMAL(3,2)) > :minConfidence", nativeQuery = true)
     List<ConsultingClassification> findByConfidenceGreaterThan(@Param("minConfidence") Double minConfidence);
     
     
@@ -58,7 +58,7 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     
     // 검색 기능
     @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result::text LIKE CONCAT('%', :searchTerm, '%') " +
+                   "WHERE JSON_SEARCH(analysis_result, 'one', :searchTerm) IS NOT NULL " +
                    "OR consulting_content LIKE CONCAT('%', :searchTerm, '%')", nativeQuery = true)
     List<ConsultingClassification> searchByContent(@Param("searchTerm") String searchTerm);
     
@@ -69,7 +69,7 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     
     // 카테고리별 최근 상담
     @Query(value = "SELECT * FROM voc_normalized " +
-                   "WHERE analysis_result->'classification'->>'category' = :category " +
+                   "WHERE JSON_UNQUOTE(JSON_EXTRACT(analysis_result, '$.classification.category')) = :category " +
                    "ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
     List<ConsultingClassification> findRecentByCategory(
         @Param("category") String category, 
