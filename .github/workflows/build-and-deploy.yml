@@ -63,12 +63,16 @@ jobs:
             index.docker.io/${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.TAG }}
             index.docker.io/${{ env.DOCKER_IMAGE }}:latest
 
-      # Publish Profile로 인증하므로 azure/login 불필요
+      # Azure CLI를 사용한 배포
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure App Service (container)
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
           images: index.docker.io/${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.TAG }}
 
       - name: Post logout Docker Hub
