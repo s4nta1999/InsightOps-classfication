@@ -26,6 +26,7 @@ import java.util.Map;
 
 /**
  * 상담 분류 컨트롤러
+ * 임시로 데이터베이스 의존성 제거
  */
 @RestController
 @RequestMapping("/api")
@@ -36,14 +37,14 @@ public class ClassificationController {
 
     private final OpenAIService openAIService;
     private final EnhancedOpenAIService enhancedOpenAIService;
-    private final ConsultingClassificationRepository repository;
+    // 임시로 Repository 의존성 제거
+    // private final ConsultingClassificationRepository repository;
 
     public ClassificationController(OpenAIService openAIService, 
-                                 EnhancedOpenAIService enhancedOpenAIService,
-                                 ConsultingClassificationRepository repository) {
+                                 EnhancedOpenAIService enhancedOpenAIService) {
         this.openAIService = openAIService;
         this.enhancedOpenAIService = enhancedOpenAIService;
-        this.repository = repository;
+        // this.repository = repository;
     }
 
     /**
@@ -117,84 +118,6 @@ public class ClassificationController {
     }
 
     /**
-     * 저장된 상담 결과 조회 엔드포인트 (새로 추가)
-     */
-    @GetMapping("/classify/{id}")
-    public ResponseEntity<ApiResponse<EnhancedClassificationResponse>> getClassificationResult(
-            @PathVariable Long id) {
-        
-        try {
-            logger.info("상담 결과 조회 요청: id={}", id);
-            
-            ConsultingClassification entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("상담 결과를 찾을 수 없습니다: " + id));
-            
-            // 엔티티를 응답 DTO로 변환
-            EnhancedClassificationResponse response = mapEntityToResponse(entity);
-            
-            return ResponseEntity.ok(ApiResponse.success(response));
-            
-        } catch (Exception e) {
-            logger.error("상담 결과 조회 중 오류 발생: id={}", id, e);
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("상담 결과 조회 중 오류가 발생했습니다.", e.getMessage()));
-        }
-    }
-
-    /**
-     * 상담 이력 조회 엔드포인트 (새로 추가)
-     */
-    @GetMapping("/classify/history")
-    public ResponseEntity<ApiResponse<Page<EnhancedClassificationResponse>>> getClassificationHistory(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        
-        try {
-            logger.info("상담 이력 조회 요청: page={}, size={}", page, size);
-            
-            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-            Page<ConsultingClassification> entities = repository.findAll(pageable);
-            
-            // 엔티티 페이지를 응답 DTO 페이지로 변환
-            Page<EnhancedClassificationResponse> responses = entities.map(this::mapEntityToResponse);
-            
-            return ResponseEntity.ok(ApiResponse.success(responses));
-            
-        } catch (Exception e) {
-            logger.error("상담 이력 조회 중 오류 발생", e);
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("상담 이력 조회 중 오류가 발생했습니다.", e.getMessage()));
-        }
-    }
-
-    /**
-     * 카테고리별 통계 조회 엔드포인트 (새로 추가)
-     */
-    @GetMapping("/classify/statistics/category")
-    public ResponseEntity<ApiResponse<List<Object[]>>> getCategoryStatistics() {
-        
-        try {
-            logger.info("카테고리별 통계 조회 요청");
-            
-            List<Object[]> statistics = repository.getCategoryStatistics();
-            
-            return ResponseEntity.ok(ApiResponse.success(statistics));
-            
-        } catch (Exception e) {
-            logger.error("카테고리별 통계 조회 중 오류 발생", e);
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("카테고리별 통계 조회 중 오류가 발생했습니다.", e.getMessage()));
-        }
-    }
-
-    /**
-     * 긴급도별 통계 조회 엔드포인트 (새로 추가)
-     */
-
-    /**
      * 서비스 배포 상태 확인용 테스트 API (Admin 의존성 없음)
      */
     @GetMapping("/test")
@@ -206,8 +129,9 @@ public class ClassificationController {
             testData.put("service", "하나카드 상담 분류 마이크로서비스");
             testData.put("version", "2.0.0");
             testData.put("test_mode", true);
+            testData.put("database_enabled", false);
             testData.put("admin_dependency", "disabled");
-            testData.put("features", List.of("기본 분류", "향상된 분류 + 분석", "데이터베이스 저장", "통계 조회"));
+            testData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
             testData.put("message", "서비스가 정상적으로 배포되었습니다! 🚀");
 
             return ResponseEntity.ok(ApiResponse.success(testData));
@@ -229,7 +153,8 @@ public class ClassificationController {
             healthData.put("timestamp", LocalDateTime.now());
             healthData.put("service", "하나카드 상담 분류 마이크로서비스");
             healthData.put("version", "2.0.0");
-            healthData.put("features", List.of("기본 분류", "향상된 분류 + 분석", "데이터베이스 저장", "통계 조회"));
+            healthData.put("database_enabled", false);
+            healthData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
 
             return ResponseEntity.ok(ApiResponse.success(healthData));
         } catch (Exception e) {
@@ -250,6 +175,7 @@ public class ClassificationController {
             Map<String, Object> categoriesData = new HashMap<>();
             categoriesData.put("message", "카테고리는 Admin API에서 동적으로 관리됩니다.");
             categoriesData.put("admin_api_endpoint", "/api/admin/consulting_category");
+            categoriesData.put("test_mode", true);
 
             return ResponseEntity.ok(ApiResponse.success(categoriesData));
         } catch (Exception e) {
@@ -269,39 +195,19 @@ public class ClassificationController {
         rootData.put("service", "하나카드 상담 분류 마이크로서비스");
         rootData.put("version", "2.0.0");
         rootData.put("status", "running");
+        rootData.put("test_mode", true);
+        rootData.put("database_enabled", false);
         rootData.put("timestamp", LocalDateTime.now());
         
         Map<String, String> endpoints = new HashMap<>();
         endpoints.put("test", "GET /api/test");
         endpoints.put("classify", "POST /api/classify");
         endpoints.put("enhanced-classify", "POST /api/enhanced-classify");
-        endpoints.put("get-result", "GET /api/classify/{id}");
-        endpoints.put("history", "GET /api/classify/history");
-        endpoints.put("category-stats", "GET /api/classify/statistics/category");
-        endpoints.put("urgency-stats", "GET /api/classify/statistics/urgency");
         endpoints.put("health", "GET /api/health");
         endpoints.put("categories", "GET /api/categories");
         
         rootData.put("endpoints", endpoints);
         
         return ResponseEntity.ok(rootData);
-    }
-
-    /**
-     * 엔티티를 응답 DTO로 변환하는 헬퍼 메서드
-     */
-    private EnhancedClassificationResponse mapEntityToResponse(ConsultingClassification entity) {
-        // TODO: JSONB 필드를 파싱하여 응답 DTO로 변환하는 로직 구현
-        // 현재는 기본 정보만 반환
-        EnhancedClassificationResponse response = new EnhancedClassificationResponse();
-        response.setId(entity.getId());
-        response.setSourceId(entity.getSourceId());
-        response.setConsultingContent(entity.getConsultingContent());
-        response.setProcessingTime(entity.getProcessingTime());
-        response.setConsultingDate(entity.getConsultingDate());
-        response.setCreatedAt(entity.getCreatedAt());
-        
-        // JSONB 파싱 로직은 별도 구현 필요
-        return response;
     }
 }

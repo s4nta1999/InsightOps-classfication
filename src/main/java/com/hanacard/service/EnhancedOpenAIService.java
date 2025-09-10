@@ -17,17 +17,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 향상된 OpenAI 서비스
  * JSONB 구조를 활용한 분류 + 분석 + 저장 기능
+ * 임시로 데이터베이스 의존성 제거
  */
 @Service
+@ConditionalOnProperty(name = "database.enabled", havingValue = "false", matchIfMissing = true)
 public class EnhancedOpenAIService {
     
     private static final Logger logger = LoggerFactory.getLogger(EnhancedOpenAIService.class);
@@ -38,8 +42,9 @@ public class EnhancedOpenAIService {
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
     
-    @Autowired
-    private ConsultingClassificationRepository repository;
+    // 임시로 Repository 의존성 제거
+    // @Autowired
+    // private ConsultingClassificationRepository repository;
     
     @Autowired
     private AdminApiClient adminApiClient;
@@ -51,6 +56,7 @@ public class EnhancedOpenAIService {
     
     /**
      * 상담 내용을 향상된 방식으로 처리하고 저장
+     * 임시로 데이터베이스 저장 비활성화
      */
     public EnhancedClassificationResponse processAndSaveConsultingContent(
             ClassificationRequest request) {
@@ -61,9 +67,9 @@ public class EnhancedOpenAIService {
             logger.info("향상된 상담 처리 시작: sourceId={}, contentLength={}", 
                        request.getSourceId(), request.getConsultingContent().length());
             
-            // 1. Admin API에서 카테고리 목록 조회 (실패 시 예외 발생)
-            List<ConsultingCategoryData> categories = adminApiClient.getConsultingCategories();
-            logger.info("Admin API에서 카테고리 {}건 조회 완료", categories.size());
+            // 1. 임시: 하드코딩된 카테고리 사용 (Admin API 호출 비활성화)
+            List<ConsultingCategoryData> categories = getDefaultCategories();
+            logger.info("기본 카테고리 {}건 사용 (테스트 모드)", categories.size());
             
             // 2. 동적 카테고리로 향상된 프롬프트 생성
             String prompt = buildEnhancedPromptWithDynamicCategories(request.getConsultingContent(), categories);
@@ -81,22 +87,24 @@ public class EnhancedOpenAIService {
             double processingTime = (System.currentTimeMillis() - startTime) / 1000.0;
             response.setProcessingTime(processingTime);
             
-            // 6. 데이터베이스에 저장
-            ConsultingClassification entity = mapToEntity(response, request);
-            entity.setCreatedAt(LocalDateTime.now());
-            entity.setUpdatedAt(LocalDateTime.now());
+            // 6. 임시로 데이터베이스 저장 비활성화
+            // ConsultingClassification entity = mapToEntity(response, request);
+            // entity.setCreatedAt(LocalDateTime.now());
+            // entity.setUpdatedAt(LocalDateTime.now());
+            // ConsultingClassification savedEntity = repository.save(entity);
+            // response.setId(savedEntity.getId());
+            // response.setCreatedAt(savedEntity.getCreatedAt());
             
-            ConsultingClassification savedEntity = repository.save(entity);
-            response.setId(savedEntity.getId());
-            response.setCreatedAt(savedEntity.getCreatedAt());
+            // 임시 ID 설정
+            response.setId(System.currentTimeMillis());
+            response.setCreatedAt(LocalDateTime.now());
             
-            // 7. Dashboard로 데이터 전송 (비동기)
-            dashboardApiClient.postClassificationData(savedEntity);
+            // 7. Dashboard로 데이터 전송 (비동기) - 임시 비활성화
+            // dashboardApiClient.postClassificationData(savedEntity);
             
-            logger.info("향상된 상담 처리 완료: id={}, category={}, categoryId={}, confidence={}, processingTime={}s", 
+            logger.info("향상된 상담 처리 완료: id={}, category={}, confidence={}, processingTime={}s", 
                        response.getId(), 
                        response.getClassification().getCategory(),
-                       savedEntity.getCategoryId(),
                        response.getClassification().getConfidence(), 
                        processingTime);
             
@@ -106,6 +114,26 @@ public class EnhancedOpenAIService {
             logger.error("향상된 상담 처리 중 오류 발생: sourceId={}", request.getSourceId(), e);
             throw new RuntimeException("상담 처리 중 오류가 발생했습니다.", e);
         }
+    }
+    
+    /**
+     * 기본 카테고리 목록 반환 (테스트용)
+     */
+    private List<ConsultingCategoryData> getDefaultCategories() {
+        List<ConsultingCategoryData> categories = new ArrayList<>();
+        
+        categories.add(new ConsultingCategoryData("23515d46", "이용내역 안내"));
+        categories.add(new ConsultingCategoryData("23516275", "한도 안내"));
+        categories.add(new ConsultingCategoryData("235163f1", "가상계좌 안내"));
+        categories.add(new ConsultingCategoryData("23516494", "서비스 이용방법 안내"));
+        categories.add(new ConsultingCategoryData("23516530", "결제대금 안내"));
+        categories.add(new ConsultingCategoryData("235165c9", "약관 안내"));
+        categories.add(new ConsultingCategoryData("23516651", "상품 안내"));
+        categories.add(new ConsultingCategoryData("235166ea", "도난/분실 신청/해제"));
+        categories.add(new ConsultingCategoryData("23516778", "승인취소/매출취소 안내"));
+        categories.add(new ConsultingCategoryData("235167ff", "선결제/즉시출금"));
+        
+        return categories;
     }
     
     
@@ -168,76 +196,6 @@ public class EnhancedOpenAIService {
     }
     
     /**
-     * 응답을 엔티티로 매핑
-     */
-    private ConsultingClassification mapToEntity(EnhancedClassificationResponse response, ClassificationRequest request) {
-        ConsultingClassification entity = new ConsultingClassification();
-        
-        // 기본 정보 설정 (voc_raw 구조에 맞춤)
-        entity.setSourceId(request.getSourceId());
-        entity.setConsultingContent(request.getConsultingContent());
-        entity.setProcessingTime(response.getProcessingTime());
-        entity.setConsultingDate(request.getConsultingDate());
-        
-        // 원본 데이터 직접 매핑 (voc_raw → voc_normalized)
-        entity.setClientGender(request.getClientGender());
-        entity.setClientAge(request.getClientAge());
-        entity.setConsultingTurns(request.getConsultingTurns());
-        entity.setConsultingLength(request.getConsultingLength());
-        
-        // 분류 결과를 별도 컬럼에 저장
-        if (response.getClassification() != null) {
-            entity.setConsultingCategory(response.getClassification().getCategory());
-            entity.setCategoryId(response.getClassification().getCategoryId());
-        }
-        
-        // AI 분석 결과만 JSON으로 저장 (기본 정보 제외)
-        try {
-            AnalysisResult analysisResult = convertToAnalysisResult(response);
-            // JSONB 컬럼에는 JSON 객체를 직접 저장
-            entity.setAnalysisResult(objectMapper.writeValueAsString(analysisResult));
-        } catch (Exception e) {
-            logger.error("JSON 변환 실패", e);
-            throw new RuntimeException("JSON 변환 실패", e);
-        }
-        
-        return entity;
-    }
-    
-    /**
-     * EnhancedClassificationResponse를 AnalysisResult로 변환
-     */
-    private AnalysisResult convertToAnalysisResult(EnhancedClassificationResponse response) {
-        // ClassificationInfo 변환
-        AnalysisResult.ClassificationInfo classificationInfo = new AnalysisResult.ClassificationInfo();
-        if (response.getClassification() != null) {
-            classificationInfo.setCategory(response.getClassification().getCategory());
-            classificationInfo.setConfidence(response.getClassification().getConfidence());
-            
-            // AlternativeCategory 배열 변환
-            if (response.getClassification().getAlternativeCategories() != null) {
-                AnalysisResult.AlternativeCategory[] altCategories = new AnalysisResult.AlternativeCategory[response.getClassification().getAlternativeCategories().length];
-                for (int i = 0; i < response.getClassification().getAlternativeCategories().length; i++) {
-                    altCategories[i] = new AnalysisResult.AlternativeCategory();
-                    altCategories[i].setCategory(response.getClassification().getAlternativeCategories()[i].getCategory());
-                    altCategories[i].setConfidence(response.getClassification().getAlternativeCategories()[i].getConfidence());
-                }
-                classificationInfo.setAlternativeCategories(altCategories);
-            }
-        }
-        
-        // AnalysisInfo 변환
-        AnalysisResult.AnalysisInfo analysisInfo = new AnalysisResult.AnalysisInfo();
-        if (response.getAnalysis() != null) {
-            analysisInfo.setProblemSituation(response.getAnalysis().getProblemSituation());
-            analysisInfo.setSolutionApproach(response.getAnalysis().getSolutionApproach());
-            analysisInfo.setExpectedOutcome(response.getAnalysis().getExpectedOutcome());
-        }
-        
-        return new AnalysisResult(classificationInfo, analysisInfo);
-    }
-    
-    /**
      * 동적 카테고리 목록으로 향상된 프롬프트 생성
      */
     private String buildEnhancedPromptWithDynamicCategories(String content, List<ConsultingCategoryData> categories) {
@@ -259,7 +217,7 @@ public class EnhancedOpenAIService {
             {
               "classification": {
                 "category": "정확한 카테고리명",
-                "category_id": 카테고리ID숫자,
+                "category_id": "카테고리ID",
                 "confidence": 0.95,
                 "alternative_categories": [
                   {
@@ -357,6 +315,6 @@ public class EnhancedOpenAIService {
             .filter(category -> category.getCategoryName().equals(categoryName))
             .map(ConsultingCategoryData::getId)
             .findFirst()
-            .orElse(null);
+            .orElse("23515d46"); // 기본값
     }
 }
