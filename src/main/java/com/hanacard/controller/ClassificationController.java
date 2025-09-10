@@ -119,10 +119,10 @@ public class ClassificationController {
     }
 
     /**
-     * MailContents용 API - 카테고리별 최근 분석 결과 조회
+     * MailContents용 API - 카테고리별 최근 분석 결과만 조회 (analysis_result만 반환)
      */
     @GetMapping("/normalization/voc_normalized")
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getVocNormalized(
+    public ResponseEntity<ApiResponse<List<Object>>> getVocNormalized(
             @RequestParam String category_id,
             @RequestParam(defaultValue = "10") Integer limit) {
         
@@ -133,41 +133,22 @@ public class ClassificationController {
             Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
             Page<ConsultingClassification> page = repository.findByCategoryIdOrderByCreatedAtDesc(category_id, pageable);
             
-            List<Map<String, Object>> results = new ArrayList<>();
+            List<Object> results = new ArrayList<>();
             
             for (ConsultingClassification entity : page.getContent()) {
-                Map<String, Object> result = new HashMap<>();
-                
-                // 기본 정보
-                result.put("id", entity.getId());
-                result.put("source_id", entity.getSourceId());
-                result.put("consulting_date", entity.getConsultingDate());
-                result.put("client_gender", entity.getClientGender());
-                result.put("client_age", entity.getClientAge());
-                result.put("consulting_turns", entity.getConsultingTurns());
-                result.put("consulting_length", entity.getConsultingLength());
-                result.put("consulting_content", entity.getConsultingContent());
-                result.put("processing_time", entity.getProcessingTime());
-                result.put("consulting_category", entity.getConsultingCategory());
-                result.put("category_id", entity.getCategoryId());
-                result.put("created_at", entity.getCreatedAt());
-                result.put("updated_at", entity.getUpdatedAt());
-                
-                // analysis_result를 JSON 객체로 파싱
+                // analysis_result만 파싱해서 반환
                 try {
                     if (entity.getAnalysisResult() != null && !entity.getAnalysisResult().isEmpty()) {
                         Object analysisResultObj = new com.fasterxml.jackson.databind.ObjectMapper()
                             .readValue(entity.getAnalysisResult(), Object.class);
-                        result.put("analysis_result", analysisResultObj);
+                        results.add(analysisResultObj);
                     } else {
-                        result.put("analysis_result", null);
+                        results.add(null);
                     }
                 } catch (Exception e) {
                     logger.warn("analysis_result JSON 파싱 실패: id={}, error={}", entity.getId(), e.getMessage());
-                    result.put("analysis_result", entity.getAnalysisResult());
+                    results.add(null);
                 }
-                
-                results.add(result);
             }
             
             logger.info("MailContents API 응답: category_id={}, 조회된 데이터 수={}", category_id, results.size());
