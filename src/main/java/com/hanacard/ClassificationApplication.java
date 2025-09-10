@@ -2,8 +2,6 @@ package com.hanacard;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,12 +11,9 @@ import java.util.Map;
 
 /**
  * 하나카드 상담 분류 마이크로서비스 메인 애플리케이션
- * 모든 외부 의존성 제거
+ * 최소한의 설정으로 Azure App Service 테스트
  */
-@SpringBootApplication(exclude = {
-    DataSourceAutoConfiguration.class,
-    HibernateJpaAutoConfiguration.class
-})
+@SpringBootApplication
 @RestController
 public class ClassificationApplication {
 
