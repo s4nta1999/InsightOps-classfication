@@ -2,7 +2,7 @@ package com.hanacard.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -14,10 +14,9 @@ public class RestTemplateConfig {
     
     @Bean
     public RestTemplate restTemplate() {
-        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000); // 10초
-        // setReadTimeout is deprecated, use connectionRequestTimeout instead
-        factory.setConnectionRequestTimeout(30000); // 30초
+        factory.setReadTimeout(30000); // 30초
         return new RestTemplate(factory);
     }
 }

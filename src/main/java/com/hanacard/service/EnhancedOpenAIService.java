@@ -42,9 +42,8 @@ public class EnhancedOpenAIService {
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
     
-    // 임시로 Repository 의존성 제거
-    // @Autowired
-    // private ConsultingClassificationRepository repository;
+    @Autowired
+    private ConsultingClassificationRepository repository;
     
     @Autowired
     private AdminApiClient adminApiClient;
@@ -67,9 +66,16 @@ public class EnhancedOpenAIService {
             logger.info("향상된 상담 처리 시작: sourceId={}, contentLength={}", 
                        request.getSourceId(), request.getConsultingContent().length());
             
-            // 1. 임시: 하드코딩된 카테고리 사용 (Admin API 호출 비활성화)
-            List<ConsultingCategoryData> categories = getDefaultCategories();
-            logger.info("기본 카테고리 {}건 사용 (테스트 모드)", categories.size());
+            // 1. Admin API에서 동적 카테고리 조회
+            List<ConsultingCategoryData> categories;
+            try {
+                categories = adminApiClient.getConsultingCategories();
+                logger.info("Admin API에서 카테고리 조회 성공: {}건", categories.size());
+            } catch (Exception e) {
+                logger.warn("Admin API 호출 실패, 기본 카테고리 사용: {}", e.getMessage());
+                categories = getDefaultCategories();
+                logger.info("기본 카테고리 {}건 사용 (폴백 모드)", categories.size());
+            }
             
             // 2. 동적 카테고리로 향상된 프롬프트 생성
             String prompt = buildEnhancedPromptWithDynamicCategories(request.getConsultingContent(), categories);
@@ -87,20 +93,21 @@ public class EnhancedOpenAIService {
             double processingTime = (System.currentTimeMillis() - startTime) / 1000.0;
             response.setProcessingTime(processingTime);
             
-            // 6. 임시로 데이터베이스 저장 비활성화
-            // ConsultingClassification entity = mapToEntity(response, request);
-            // entity.setCreatedAt(LocalDateTime.now());
-            // entity.setUpdatedAt(LocalDateTime.now());
-            // ConsultingClassification savedEntity = repository.save(entity);
-            // response.setId(savedEntity.getId());
-            // response.setCreatedAt(savedEntity.getCreatedAt());
+            // 6. 데이터베이스 저장
+            ConsultingClassification entity = mapToEntity(response, request);
+            entity.setCreatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(LocalDateTime.now());
+            ConsultingClassification savedEntity = repository.save(entity);
+            response.setId(savedEntity.getId());
+            response.setCreatedAt(savedEntity.getCreatedAt());
             
-            // 임시 ID 설정
-            response.setId(System.currentTimeMillis());
-            response.setCreatedAt(LocalDateTime.now());
-            
-            // 7. Dashboard로 데이터 전송 (비동기) - 임시 비활성화
-            // dashboardApiClient.postClassificationData(savedEntity);
+            // 7. Dashboard로 데이터 전송 (비동기)
+            try {
+                dashboardApiClient.postClassificationData(savedEntity);
+                logger.info("Dashboard로 데이터 전송 완료: id={}", savedEntity.getId());
+            } catch (Exception e) {
+                logger.warn("Dashboard 전송 실패 (메인 로직은 계속 진행): {}", e.getMessage());
+            }
             
             logger.info("향상된 상담 처리 완료: id={}, category={}, confidence={}, processingTime={}s", 
                        response.getId(), 
@@ -316,5 +323,39 @@ public class EnhancedOpenAIService {
             .map(ConsultingCategoryData::getId)
             .findFirst()
             .orElse("23515d46"); // 기본값
+    }
+    
+    /**
+     * 응답을 엔티티로 변환
+     */
+    private ConsultingClassification mapToEntity(EnhancedClassificationResponse response, ClassificationRequest request) {
+        ConsultingClassification entity = new ConsultingClassification();
+        
+        // 기본 정보 설정
+        entity.setSourceId(request.getSourceId());
+        entity.setConsultingContent(request.getConsultingContent());
+        entity.setConsultingDate(request.getConsultingDate());
+        entity.setClientGender(request.getClientGender());
+        entity.setClientAge(request.getClientAge());
+        entity.setConsultingTurns(request.getConsultingTurns());
+        entity.setConsultingLength(request.getConsultingLength());
+        entity.setProcessingTime(response.getProcessingTime());
+        
+        // 분류 결과 설정
+        if (response.getClassification() != null) {
+            entity.setConsultingCategory(response.getClassification().getCategory());
+            entity.setCategoryId(response.getClassification().getCategoryId());
+        }
+        
+        // 분석 결과를 JSON으로 저장
+        try {
+            String analysisJson = objectMapper.writeValueAsString(response);
+            entity.setAnalysisResult(analysisJson);
+        } catch (Exception e) {
+            logger.error("분석 결과 JSON 변환 실패", e);
+            entity.setAnalysisResult("{}");
+        }
+        
+        return entity;
     }
 }

@@ -37,14 +37,14 @@ public class ClassificationController {
 
     private final OpenAIService openAIService;
     private final EnhancedOpenAIService enhancedOpenAIService;
-    // 임시로 Repository 의존성 제거
-    // private final ConsultingClassificationRepository repository;
+    private final ConsultingClassificationRepository repository;
 
     public ClassificationController(OpenAIService openAIService, 
-                                 EnhancedOpenAIService enhancedOpenAIService) {
+                                 EnhancedOpenAIService enhancedOpenAIService,
+                                 ConsultingClassificationRepository repository) {
         this.openAIService = openAIService;
         this.enhancedOpenAIService = enhancedOpenAIService;
-        // this.repository = repository;
+        this.repository = repository;
     }
 
     /**
@@ -129,7 +129,7 @@ public class ClassificationController {
             testData.put("service", "하나카드 상담 분류 마이크로서비스");
             testData.put("version", "2.0.0");
             testData.put("test_mode", true);
-            testData.put("database_enabled", false);
+            testData.put("database_enabled", true);
             testData.put("admin_dependency", "disabled");
             testData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
             testData.put("message", "서비스가 정상적으로 배포되었습니다! 🚀");
@@ -153,7 +153,7 @@ public class ClassificationController {
             healthData.put("timestamp", LocalDateTime.now());
             healthData.put("service", "하나카드 상담 분류 마이크로서비스");
             healthData.put("version", "2.0.0");
-            healthData.put("database_enabled", false);
+            healthData.put("database_enabled", true);
             healthData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
 
             return ResponseEntity.ok(ApiResponse.success(healthData));
@@ -196,7 +196,7 @@ public class ClassificationController {
         rootData.put("version", "2.0.0");
         rootData.put("status", "running");
         rootData.put("test_mode", true);
-        rootData.put("database_enabled", false);
+        rootData.put("database_enabled", true);
         rootData.put("timestamp", LocalDateTime.now());
         
         Map<String, String> endpoints = new HashMap<>();

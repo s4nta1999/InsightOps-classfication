@@ -185,12 +185,30 @@ Dockerfile                 # Docker 이미지 빌드
 
 ## 🔧 개발 환경 설정
 
+### 🔐 환경변수 설정
+```bash
+# 1. 환경변수 파일 복사
+cp env-example.sh env-local.sh
+
+# 2. 환경변수 파일 편집 (실제 값으로 수정)
+nano env-local.sh
+
+# 3. 환경변수 로드
+source env-local.sh
+
+# 4. 환경변수 확인
+echo $OPENAI_API_KEY
+```
+
 ### 로컬 개발
 ```bash
-# Maven 빌드
+# 1. 환경변수 로드
+source env-local.sh
+
+# 2. Maven 빌드
 mvn clean package
 
-# Spring Boot 실행
+# 3. Spring Boot 실행
 mvn spring-boot:run
 ```
 
