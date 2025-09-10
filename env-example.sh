@@ -11,7 +11,7 @@ export SPRING_DATASOURCE_PASSWORD="your-database-password"
 export SPRING_JPA_HIBERNATE_DDL_AUTO="update"
 
 # OpenAI API 설정
-export OPENAI_API_KEY="your-openai-api-key-here"
+export OPENAI_API_KEY="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"
 export OPENAI_MODEL="gpt-4o-mini"
 
 # 외부 API 설정
