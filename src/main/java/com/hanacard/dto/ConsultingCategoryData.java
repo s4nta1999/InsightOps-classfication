@@ -7,14 +7,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class ConsultingCategoryData {
     
-    @JsonProperty("id")
+    @JsonProperty("category_id")
     private String id;
     
-    @JsonProperty("category_name")
+    @JsonProperty("consulting_category")
     private String categoryName;
     
-    @JsonProperty("description")
-    private String description;
+    @JsonProperty("assignee_id")
+    private String assigneeId;
     
     @JsonProperty("created_at")
     private String createdAt;
@@ -25,10 +25,15 @@ public class ConsultingCategoryData {
     // 생성자
     public ConsultingCategoryData() {}
     
-    public ConsultingCategoryData(String id, String categoryName, String description, String createdAt, String updatedAt) {
+    public ConsultingCategoryData(String id, String categoryName) {
         this.id = id;
         this.categoryName = categoryName;
-        this.description = description;
+    }
+    
+    public ConsultingCategoryData(String id, String categoryName, String assigneeId, String createdAt, String updatedAt) {
+        this.id = id;
+        this.categoryName = categoryName;
+        this.assigneeId = assigneeId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -40,8 +45,8 @@ public class ConsultingCategoryData {
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getAssigneeId() { return assigneeId; }
+    public void setAssigneeId(String assigneeId) { this.assigneeId = assigneeId; }
     
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
