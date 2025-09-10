@@ -113,6 +113,9 @@ public class EnhancedClassificationResponse {
         @JsonProperty("category")
         private String category;
         
+        @JsonProperty("category_id")
+        private String categoryId;
+        
         @JsonProperty("confidence")
         private Double confidence;
         
@@ -122,6 +125,9 @@ public class EnhancedClassificationResponse {
         // getter, setter
         public String getCategory() { return category; }
         public void setCategory(String category) { this.category = category; }
+        
+        public String getCategoryId() { return categoryId; }
+        public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
         
         public Double getConfidence() { return confidence; }
         public void setConfidence(Double confidence) { this.confidence = confidence; }

@@ -52,6 +52,10 @@ public class ConsultingClassification {
     @Column(name = "consulting_category", length = 100)
     private String consultingCategory;
     
+    // 카테고리 ID (Admin API에서 가져온 8자리 UUID)
+    @Column(name = "category_id", length = 8)
+    private String categoryId;
+    
     // AI 분석 결과만 JSON으로 저장
     @Column(name = "analysis_result", nullable = false, columnDefinition = "JSON")
     @JdbcTypeCode(SqlTypes.JSON)
@@ -168,6 +172,14 @@ public class ConsultingClassification {
     
     public void setConsultingCategory(String consultingCategory) {
         this.consultingCategory = consultingCategory;
+    }
+    
+    public String getCategoryId() {
+        return categoryId;
+    }
+    
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
     }
     
     // 편의 메서드들

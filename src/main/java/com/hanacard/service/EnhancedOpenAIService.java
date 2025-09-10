@@ -2,9 +2,11 @@ package com.hanacard.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hanacard.constants.ConsultingCategories;
+import com.hanacard.client.AdminApiClient;
+import com.hanacard.client.DashboardApiClient;
 import com.hanacard.dto.AnalysisResult;
 import com.hanacard.dto.ClassificationRequest;
+import com.hanacard.dto.ConsultingCategoryData;
 import com.hanacard.dto.EnhancedClassificationResponse;
 import com.hanacard.entity.ConsultingClassification;
 import com.hanacard.repository.ConsultingClassificationRepository;
@@ -20,8 +22,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * 향상된 OpenAI 서비스
@@ -41,6 +41,12 @@ public class EnhancedOpenAIService {
     @Autowired
     private ConsultingClassificationRepository repository;
     
+    @Autowired
+    private AdminApiClient adminApiClient;
+    
+    @Autowired
+    private DashboardApiClient dashboardApiClient;
+    
     private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
@@ -55,23 +61,27 @@ public class EnhancedOpenAIService {
             logger.info("향상된 상담 처리 시작: sourceId={}, contentLength={}", 
                        request.getSourceId(), request.getConsultingContent().length());
             
-            // 1. 향상된 프롬프트로 OpenAI API 호출
-            String prompt = buildEnhancedPrompt(request.getConsultingContent());
+            // 1. Admin API에서 카테고리 목록 조회 (실패 시 예외 발생)
+            List<ConsultingCategoryData> categories = adminApiClient.getConsultingCategories();
+            logger.info("Admin API에서 카테고리 {}건 조회 완료", categories.size());
+            
+            // 2. 동적 카테고리로 향상된 프롬프트 생성
+            String prompt = buildEnhancedPromptWithDynamicCategories(request.getConsultingContent(), categories);
             String openAIResponse = callOpenAI(prompt);
             
-            // 2. OpenAI 응답 파싱
-            EnhancedClassificationResponse response = parseEnhancedResponse(openAIResponse);
+            // 3. OpenAI 응답 파싱 (category_id 포함)
+            EnhancedClassificationResponse response = parseEnhancedResponseWithCategoryId(openAIResponse, categories);
             
-            // 3. 기본 정보 설정
+            // 4. 기본 정보 설정
             response.setSourceId(request.getSourceId());
             response.setConsultingContent(request.getConsultingContent());
             response.setConsultingDate(request.getConsultingDate());
             
-            // 4. 처리 시간 계산
+            // 5. 처리 시간 계산
             double processingTime = (System.currentTimeMillis() - startTime) / 1000.0;
             response.setProcessingTime(processingTime);
             
-            // 5. 데이터베이스에 저장
+            // 6. 데이터베이스에 저장
             ConsultingClassification entity = mapToEntity(response, request);
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
@@ -80,9 +90,13 @@ public class EnhancedOpenAIService {
             response.setId(savedEntity.getId());
             response.setCreatedAt(savedEntity.getCreatedAt());
             
-            logger.info("향상된 상담 처리 완료: id={}, category={}, confidence={}, processingTime={}s", 
+            // 7. Dashboard로 데이터 전송 (비동기)
+            dashboardApiClient.postClassificationData(savedEntity);
+            
+            logger.info("향상된 상담 처리 완료: id={}, category={}, categoryId={}, confidence={}, processingTime={}s", 
                        response.getId(), 
-                       response.getClassification().getCategory(), 
+                       response.getClassification().getCategory(),
+                       savedEntity.getCategoryId(),
                        response.getClassification().getConfidence(), 
                        processingTime);
             
@@ -94,50 +108,6 @@ public class EnhancedOpenAIService {
         }
     }
     
-    /**
-     * 향상된 프롬프트 생성
-     */
-    private String buildEnhancedPrompt(String content) {
-        return String.format("""
-            다음 상담 내용을 분석하여 JSON 형식으로 답변해주세요:
-            
-            {
-              "classification": {
-                "category": "23개 카테고리 중 하나",
-                "confidence": "0.0~1.0 사이 값",
-                "alternative_categories": [
-                  {"category": "대안 카테고리", "confidence": "신뢰도"}
-                ]
-              },
-              "analysis": {
-                "problem_situation": "문제 상황을 1-2문장으로 요약",
-                "solution_approach": "해결 방안을 1-2문장으로 설명",
-                "expected_outcome": "예상 결과를 1문장으로 제시",
-                "urgency_level": "긴급도 (low/medium/high)",
-                "priority_score": "우선순위 점수 (1.0~10.0)"
-              },
-              "extracted_info": {
-                "card_type": "카드 타입",
-                "issue_type": "문제 유형",
-                "location": "위치 정보",
-                "client_emotion": "고객 감정 상태"
-              }
-            }
-            
-            사용 가능한 카테고리: %s
-            
-            상담 내용: %s
-            
-            주의사항:
-            - 모든 필드는 한국어로 답변
-            - 문제상황은 구체적이고 명확하게
-            - 해결방안은 실용적이고 실행 가능하게
-            - 예상결과는 긍정적이고 구체적으로
-            - JSON 형식을 정확히 지켜주세요
-            """, 
-            String.join(", ", ConsultingCategories.getAllCategories()),
-            content);
-    }
     
     /**
      * OpenAI API 호출
@@ -170,71 +140,6 @@ public class EnhancedOpenAIService {
         }
     }
     
-    /**
-     * OpenAI 응답 파싱
-     */
-    private EnhancedClassificationResponse parseEnhancedResponse(String openAIResponse) {
-        try {
-            // JSON 추출 (```json ... ``` 형태일 수 있음)
-            String jsonContent = extractJsonFromResponse(openAIResponse);
-            
-            // JSON 파싱
-            JsonNode root = objectMapper.readTree(jsonContent);
-            
-            EnhancedClassificationResponse response = new EnhancedClassificationResponse();
-            
-            // 분류 정보 파싱
-            if (root.has("classification")) {
-                JsonNode classification = root.get("classification");
-                EnhancedClassificationResponse.ClassificationInfo classificationInfo = 
-                    new EnhancedClassificationResponse.ClassificationInfo();
-                
-                classificationInfo.setCategory(classification.get("category").asText());
-                classificationInfo.setConfidence(classification.get("confidence").asDouble());
-                
-                // 대안 카테고리 파싱
-                if (classification.has("alternative_categories")) {
-                    JsonNode alternatives = classification.get("alternative_categories");
-                    EnhancedClassificationResponse.AlternativeCategory[] altCategories = 
-                        new EnhancedClassificationResponse.AlternativeCategory[alternatives.size()];
-                    
-                    for (int i = 0; i < alternatives.size(); i++) {
-                        JsonNode alt = alternatives.get(i);
-                        EnhancedClassificationResponse.AlternativeCategory altCat = 
-                            new EnhancedClassificationResponse.AlternativeCategory();
-                        altCat.setCategory(alt.get("category").asText());
-                        altCat.setConfidence(alt.get("confidence").asDouble());
-                        altCategories[i] = altCat;
-                    }
-                    
-                    classificationInfo.setAlternativeCategories(altCategories);
-                }
-                
-                response.setClassification(classificationInfo);
-            }
-            
-            // 분석 정보 파싱
-            if (root.has("analysis")) {
-                JsonNode analysis = root.get("analysis");
-                EnhancedClassificationResponse.AnalysisInfo analysisInfo = 
-                    new EnhancedClassificationResponse.AnalysisInfo();
-                
-                analysisInfo.setProblemSituation(analysis.get("problem_situation").asText());
-                analysisInfo.setSolutionApproach(analysis.get("solution_approach").asText());
-                analysisInfo.setExpectedOutcome(analysis.get("expected_outcome").asText());
-                
-                
-                response.setAnalysis(analysisInfo);
-            }
-            
-            
-            return response;
-            
-        } catch (Exception e) {
-            logger.error("OpenAI 응답 파싱 실패: {}", openAIResponse, e);
-            throw new RuntimeException("응답 파싱 실패", e);
-        }
-    }
     
     /**
      * 응답에서 JSON 추출
@@ -283,6 +188,7 @@ public class EnhancedOpenAIService {
         // 분류 결과를 별도 컬럼에 저장
         if (response.getClassification() != null) {
             entity.setConsultingCategory(response.getClassification().getCategory());
+            entity.setCategoryId(response.getClassification().getCategoryId());
         }
         
         // AI 분석 결과만 JSON으로 저장 (기본 정보 제외)
@@ -329,5 +235,128 @@ public class EnhancedOpenAIService {
         }
         
         return new AnalysisResult(classificationInfo, analysisInfo);
+    }
+    
+    /**
+     * 동적 카테고리 목록으로 향상된 프롬프트 생성
+     */
+    private String buildEnhancedPromptWithDynamicCategories(String content, List<ConsultingCategoryData> categories) {
+        StringBuilder categoryList = new StringBuilder();
+        for (ConsultingCategoryData category : categories) {
+            categoryList.append("- ").append(category.getCategoryName())
+                       .append(" (ID: ").append(category.getId()).append(")\n");
+        }
+        
+        return String.format("""
+            다음 상담 내용을 분석하여 적절한 카테고리로 분류하고 상세 분석을 제공해주세요.
+            
+            상담 내용: %s
+            
+            가능한 카테고리 목록:
+            %s
+            
+            다음 JSON 형식으로 응답해주세요:
+            {
+              "classification": {
+                "category": "정확한 카테고리명",
+                "category_id": 카테고리ID숫자,
+                "confidence": 0.95,
+                "alternative_categories": [
+                  {
+                    "category": "대안카테고리명",
+                    "confidence": 0.05
+                  }
+                ]
+              },
+              "analysis": {
+                "problem_situation": "고객이 겪고 있는 구체적인 문제 상황",
+                "solution_approach": "문제 해결을 위한 구체적인 접근 방법",
+                "expected_outcome": "해결 후 예상되는 결과"
+              }
+            }
+            """, content, categoryList.toString());
+    }
+    
+    /**
+     * OpenAI 응답을 파싱하여 category_id 포함한 응답 생성
+     */
+    private EnhancedClassificationResponse parseEnhancedResponseWithCategoryId(String openAIResponse, List<ConsultingCategoryData> categories) {
+        try {
+            String jsonResponse = extractJsonFromResponse(openAIResponse);
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            
+            EnhancedClassificationResponse response = new EnhancedClassificationResponse();
+            
+            // 분류 정보 파싱 (category_id 포함)
+            if (root.has("classification")) {
+                JsonNode classification = root.get("classification");
+                EnhancedClassificationResponse.ClassificationInfo classificationInfo = 
+                    new EnhancedClassificationResponse.ClassificationInfo();
+                
+                String categoryName = classification.get("category").asText();
+                classificationInfo.setCategory(categoryName);
+                classificationInfo.setConfidence(classification.get("confidence").asDouble());
+                
+                // category_id 설정
+                if (classification.has("category_id")) {
+                    String categoryId = classification.get("category_id").asText();
+                    classificationInfo.setCategoryId(categoryId);
+                } else {
+                    // category_id가 없으면 카테고리명으로 찾기
+                    String categoryId = findCategoryIdByName(categoryName, categories);
+                    classificationInfo.setCategoryId(categoryId);
+                }
+                
+                // 대안 카테고리 파싱
+                if (classification.has("alternative_categories")) {
+                    JsonNode alternatives = classification.get("alternative_categories");
+                    EnhancedClassificationResponse.AlternativeCategory[] altCategories = 
+                        new EnhancedClassificationResponse.AlternativeCategory[alternatives.size()];
+                    
+                    for (int i = 0; i < alternatives.size(); i++) {
+                        JsonNode alt = alternatives.get(i);
+                        EnhancedClassificationResponse.AlternativeCategory altCat = 
+                            new EnhancedClassificationResponse.AlternativeCategory();
+                        altCat.setCategory(alt.get("category").asText());
+                        altCat.setConfidence(alt.get("confidence").asDouble());
+                        altCategories[i] = altCat;
+                    }
+                    
+                    classificationInfo.setAlternativeCategories(altCategories);
+                }
+                
+                response.setClassification(classificationInfo);
+            }
+            
+            // 분석 정보 파싱
+            if (root.has("analysis")) {
+                JsonNode analysis = root.get("analysis");
+                EnhancedClassificationResponse.AnalysisInfo analysisInfo = 
+                    new EnhancedClassificationResponse.AnalysisInfo();
+                
+                analysisInfo.setProblemSituation(analysis.get("problem_situation").asText());
+                analysisInfo.setSolutionApproach(analysis.get("solution_approach").asText());
+                analysisInfo.setExpectedOutcome(analysis.get("expected_outcome").asText());
+                
+                response.setAnalysis(analysisInfo);
+            }
+            
+            return response;
+            
+        } catch (Exception e) {
+            logger.error("OpenAI 응답 파싱 실패: {}", openAIResponse, e);
+            throw new RuntimeException("응답 파싱 실패", e);
+        }
+    }
+    
+    /**
+     * 카테고리명으로 카테고리 ID 찾기
+     */
+    private String findCategoryIdByName(String categoryName, List<ConsultingCategoryData> categories) {
+        return categories.stream()
+            .filter(category -> category.getCategoryName().equals(categoryName))
+            .map(ConsultingCategoryData::getId)
+            .findFirst()
+            .orElse(null);
     }
 }

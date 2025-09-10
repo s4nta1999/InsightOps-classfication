@@ -1,6 +1,5 @@
 package com.hanacard.service;
 
-import com.hanacard.constants.ConsultingCategories;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
@@ -91,6 +90,16 @@ public class OpenAIService {
      * 시스템 프롬프트 생성
      */
     private String createSystemPrompt() {
+        // 기본 카테고리 목록 (하드코딩)
+        String[] categories = {
+            "도난/분실 신청/해제", "이용내역 안내", "승인취소/매출취소 안내", "한도상향 접수/처리",
+            "선결제/즉시출금", "한도 안내", "가상계좌 안내", "결제계좌 안내/변경", "서비스 이용방법 안내",
+            "결제대금 안내", "연체대금 즉시출금", "포인트/마일리지 전환등록", "증명서/확인서 발급",
+            "가상계좌 예약/취소", "단기카드대출 안내/실행", "장기카드대출 안내", "정부지원 바우처 (등유, 임신 등)",
+            "이벤트 안내", "심사 진행사항 안내", "도시가스", "일부결제 대금이월약정 안내", "일부결제대금이월약정 해지",
+            "결제일 안내/변경", "약관 안내", "상품 안내"
+        };
+        
         return String.format("""
             당신은 하나카드 상담 내용을 분석하여 적절한 상담 카테고리로 분류하는 전문가입니다.
             
@@ -106,9 +115,9 @@ public class OpenAIService {
             
             응답 형식: "카테고리명" (따옴표 포함)
             """, 
-            ConsultingCategories.CATEGORY_COUNT,
-            String.join("\n", ConsultingCategories.CATEGORIES.stream()
-                .map(cat -> String.format("%d. %s", ConsultingCategories.CATEGORIES.indexOf(cat) + 1, cat))
+            categories.length,
+            String.join("\n", List.of(categories).stream()
+                .map(cat -> String.format("%d. %s", List.of(categories).indexOf(cat) + 1, cat))
                 .toList())
         );
     }
@@ -133,13 +142,25 @@ public class OpenAIService {
     private String extractCategory(String response) {
         String cleanResponse = response.trim().replaceAll("[\"\"']", "");
         
+        // 기본 카테고리 목록 (하드코딩)
+        String[] categories = {
+            "도난/분실 신청/해제", "이용내역 안내", "승인취소/매출취소 안내", "한도상향 접수/처리",
+            "선결제/즉시출금", "한도 안내", "가상계좌 안내", "결제계좌 안내/변경", "서비스 이용방법 안내",
+            "결제대금 안내", "연체대금 즉시출금", "포인트/마일리지 전환등록", "증명서/확인서 발급",
+            "가상계좌 예약/취소", "단기카드대출 안내/실행", "장기카드대출 안내", "정부지원 바우처 (등유, 임신 등)",
+            "이벤트 안내", "심사 진행사항 안내", "도시가스", "일부결제 대금이월약정 안내", "일부결제대금이월약정 해지",
+            "결제일 안내/변경", "약관 안내", "상품 안내"
+        };
+        
         // 정확히 일치하는 카테고리 찾기
-        if (ConsultingCategories.isValidCategory(cleanResponse)) {
-            return cleanResponse;
+        for (String category : categories) {
+            if (cleanResponse.equals(category)) {
+                return cleanResponse;
+            }
         }
 
         // 부분 일치하는 카테고리 찾기
-        for (String category : ConsultingCategories.CATEGORIES) {
+        for (String category : categories) {
             if (cleanResponse.contains(category) || category.contains(cleanResponse)) {
                 logger.warn("부분 일치로 카테고리 찾음: 응답={}, 카테고리={}", response, category);
                 return category;
@@ -157,17 +178,28 @@ public class OpenAIService {
     private double calculateConfidence(String response) {
         String cleanResponse = response.trim().replaceAll("[\"\"']", "");
         
+        // 기본 카테고리 목록 (하드코딩)
+        String[] categories = {
+            "도난/분실 신청/해제", "이용내역 안내", "승인취소/매출취소 안내", "한도상향 접수/처리",
+            "선결제/즉시출금", "한도 안내", "가상계좌 안내", "결제계좌 안내/변경", "서비스 이용방법 안내",
+            "결제대금 안내", "연체대금 즉시출금", "포인트/마일리지 전환등록", "증명서/확인서 발급",
+            "가상계좌 예약/취소", "단기카드대출 안내/실행", "장기카드대출 안내", "정부지원 바우처 (등유, 임신 등)",
+            "이벤트 안내", "심사 진행사항 안내", "도시가스", "일부결제 대금이월약정 안내", "일부결제대금이월약정 해지",
+            "결제일 안내/변경", "약관 안내", "상품 안내"
+        };
+        
         // 정확히 일치하는 경우 높은 신뢰도
-        if (ConsultingCategories.isValidCategory(cleanResponse)) {
-            return 0.95;
+        for (String category : categories) {
+            if (cleanResponse.equals(category)) {
+                return 0.95;
+            }
         }
 
         // 부분 일치하는 경우 중간 신뢰도
-        boolean hasPartialMatch = ConsultingCategories.CATEGORIES.stream()
-            .anyMatch(category -> cleanResponse.contains(category) || category.contains(cleanResponse));
-
-        if (hasPartialMatch) {
-            return 0.8;
+        for (String category : categories) {
+            if (cleanResponse.contains(category) || category.contains(cleanResponse)) {
+                return 0.8;
+            }
         }
 
         // 기본값 사용하는 경우 낮은 신뢰도

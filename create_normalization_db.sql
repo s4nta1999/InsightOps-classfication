@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS voc_normalized (
     consulting_content TEXT NOT NULL,
     processing_time DOUBLE,
     consulting_category VARCHAR(100),
+    category_id VARCHAR(8),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     analysis_result JSON NOT NULL
@@ -34,6 +35,7 @@ CREATE INDEX idx_consulting_date ON voc_normalized(consulting_date);
 CREATE INDEX idx_consulting_category ON voc_normalized(consulting_category);
 CREATE INDEX idx_created_at ON voc_normalized(created_at);
 CREATE INDEX idx_client_info ON voc_normalized(client_gender, client_age);
+CREATE INDEX idx_category_id ON voc_normalized(category_id);
 
 -- 4. JSON 인덱스 (MySQL 8.0+)
 CREATE INDEX idx_category_json ON voc_normalized(
@@ -46,11 +48,11 @@ CREATE INDEX idx_confidence_json ON voc_normalized(
 -- 5. 테스트 데이터 삽입 (voc_raw 구조에 맞춤)
 INSERT INTO voc_normalized (
     source_id, consulting_date, client_gender, client_age, consulting_turns, consulting_length,
-    consulting_content, processing_time, consulting_category, analysis_result
+    consulting_content, processing_time, consulting_category, category_id, analysis_result
 ) VALUES (
     'test001', '2025-09-09 14:30:00', '여자', 30, 15, 120,
     '안녕하세요. 카드 분실 신고를 하고 싶습니다.',
-    4.932, '도난/분실 신청/해제',
+    4.932, '도난/분실 신청/해제', '550e8400',
     JSON_OBJECT(
         'classification', JSON_OBJECT(
             'category', '도난/분실 신청/해제',

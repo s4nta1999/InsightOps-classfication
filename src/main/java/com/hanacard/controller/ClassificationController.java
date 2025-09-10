@@ -1,6 +1,5 @@
 package com.hanacard.controller;
 
-import com.hanacard.constants.ConsultingCategories;
 import com.hanacard.dto.ApiResponse;
 import com.hanacard.dto.ClassificationRequest;
 import com.hanacard.dto.ClassificationResponse;
@@ -220,13 +219,14 @@ public class ClassificationController {
 
     /**
      * 사용 가능한 카테고리 목록 조회 엔드포인트
+     * Note: 카테고리는 이제 Admin API에서 동적으로 조회됩니다.
      */
     @GetMapping("/categories")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getCategories() {
         try {
             Map<String, Object> categoriesData = new HashMap<>();
-            categoriesData.put("categories", ConsultingCategories.getAllCategories());
-            categoriesData.put("count", ConsultingCategories.CATEGORY_COUNT);
+            categoriesData.put("message", "카테고리는 Admin API에서 동적으로 관리됩니다.");
+            categoriesData.put("admin_api_endpoint", "/api/admin/consulting_category");
 
             return ResponseEntity.ok(ApiResponse.success(categoriesData));
         } catch (Exception e) {
