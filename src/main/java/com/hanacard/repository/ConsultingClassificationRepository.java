@@ -1,6 +1,8 @@
 package com.hanacard.repository;
 
 import com.hanacard.entity.ConsultingClassification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,6 +28,9 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     
     // 카테고리별 조회 (별도 컬럼 활용)
     List<ConsultingClassification> findByConsultingCategory(String consultingCategory);
+    
+    // MailContents용 - category_id로 최근 데이터 조회
+    Page<ConsultingClassification> findByCategoryIdOrderByCreatedAtDesc(String categoryId, Pageable pageable);
     
     // MySQL JSON 기반 고급 쿼리들
     @Query(value = "SELECT * FROM voc_normalized " +

@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +119,70 @@ public class ClassificationController {
     }
 
     /**
+     * MailContents용 API - 카테고리별 최근 분석 결과 조회
+     */
+    @GetMapping("/normalization/voc_normalized")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getVocNormalized(
+            @RequestParam String category_id,
+            @RequestParam(defaultValue = "10") Integer limit) {
+        
+        try {
+            logger.info("MailContents API 호출: category_id={}, limit={}", category_id, limit);
+            
+            // 카테고리 ID로 최근 데이터 조회
+            Pageable pageable = PageRequest.of(0, limit, Sort.by("createdAt").descending());
+            Page<ConsultingClassification> page = repository.findByCategoryIdOrderByCreatedAtDesc(category_id, pageable);
+            
+            List<Map<String, Object>> results = new ArrayList<>();
+            
+            for (ConsultingClassification entity : page.getContent()) {
+                Map<String, Object> result = new HashMap<>();
+                
+                // 기본 정보
+                result.put("id", entity.getId());
+                result.put("source_id", entity.getSourceId());
+                result.put("consulting_date", entity.getConsultingDate());
+                result.put("client_gender", entity.getClientGender());
+                result.put("client_age", entity.getClientAge());
+                result.put("consulting_turns", entity.getConsultingTurns());
+                result.put("consulting_length", entity.getConsultingLength());
+                result.put("consulting_content", entity.getConsultingContent());
+                result.put("processing_time", entity.getProcessingTime());
+                result.put("consulting_category", entity.getConsultingCategory());
+                result.put("category_id", entity.getCategoryId());
+                result.put("created_at", entity.getCreatedAt());
+                result.put("updated_at", entity.getUpdatedAt());
+                
+                // analysis_result를 JSON 객체로 파싱
+                try {
+                    if (entity.getAnalysisResult() != null && !entity.getAnalysisResult().isEmpty()) {
+                        Object analysisResultObj = new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readValue(entity.getAnalysisResult(), Object.class);
+                        result.put("analysis_result", analysisResultObj);
+                    } else {
+                        result.put("analysis_result", null);
+                    }
+                } catch (Exception e) {
+                    logger.warn("analysis_result JSON 파싱 실패: id={}, error={}", entity.getId(), e.getMessage());
+                    result.put("analysis_result", entity.getAnalysisResult());
+                }
+                
+                results.add(result);
+            }
+            
+            logger.info("MailContents API 응답: category_id={}, 조회된 데이터 수={}", category_id, results.size());
+            
+            return ResponseEntity.ok(ApiResponse.success(results));
+            
+        } catch (Exception e) {
+            logger.error("MailContents API 오류 발생: category_id={}, limit={}", category_id, limit, e);
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("데이터 조회 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
      * 서비스 배포 상태 확인용 테스트 API (Admin 의존성 없음)
      */
     @GetMapping("/test")
@@ -131,7 +196,7 @@ public class ClassificationController {
             testData.put("test_mode", true);
             testData.put("database_enabled", true);
             testData.put("admin_dependency", "disabled");
-            testData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
+            testData.put("features", List.of("기본 분류", "향상된 분류 + 분석", "MailContents API"));
             testData.put("message", "서비스가 정상적으로 배포되었습니다! 🚀");
 
             return ResponseEntity.ok(ApiResponse.success(testData));
@@ -154,7 +219,7 @@ public class ClassificationController {
             healthData.put("service", "하나카드 상담 분류 마이크로서비스");
             healthData.put("version", "2.0.0");
             healthData.put("database_enabled", true);
-            healthData.put("features", List.of("기본 분류", "향상된 분류 + 분석"));
+            healthData.put("features", List.of("기본 분류", "향상된 분류 + 분석", "MailContents API"));
 
             return ResponseEntity.ok(ApiResponse.success(healthData));
         } catch (Exception e) {
@@ -205,6 +270,7 @@ public class ClassificationController {
         endpoints.put("enhanced-classify", "POST /api/enhanced-classify");
         endpoints.put("health", "GET /api/health");
         endpoints.put("categories", "GET /api/categories");
+        endpoints.put("voc_normalized", "GET /api/normalization/voc_normalized?category_id={id}&limit={num}");
         
         rootData.put("endpoints", endpoints);
         
