@@ -11,7 +11,6 @@ import com.hanacard.service.OpenAIService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -196,6 +195,30 @@ public class ClassificationController {
      */
 
     /**
+     * 서비스 배포 상태 확인용 테스트 API (Admin 의존성 없음)
+     */
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> testService() {
+        try {
+            Map<String, Object> testData = new HashMap<>();
+            testData.put("status", "healthy");
+            testData.put("timestamp", LocalDateTime.now());
+            testData.put("service", "하나카드 상담 분류 마이크로서비스");
+            testData.put("version", "2.0.0");
+            testData.put("test_mode", true);
+            testData.put("admin_dependency", "disabled");
+            testData.put("features", List.of("기본 분류", "향상된 분류 + 분석", "데이터베이스 저장", "통계 조회"));
+            testData.put("message", "서비스가 정상적으로 배포되었습니다! 🚀");
+
+            return ResponseEntity.ok(ApiResponse.success(testData));
+        } catch (Exception e) {
+            logger.error("테스트 API 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("테스트 API 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
      * 서비스 상태 확인 엔드포인트
      */
     @GetMapping("/health")
@@ -249,6 +272,7 @@ public class ClassificationController {
         rootData.put("timestamp", LocalDateTime.now());
         
         Map<String, String> endpoints = new HashMap<>();
+        endpoints.put("test", "GET /api/test");
         endpoints.put("classify", "POST /api/classify");
         endpoints.put("enhanced-classify", "POST /api/enhanced-classify");
         endpoints.put("get-result", "GET /api/classify/{id}");
