@@ -101,13 +101,15 @@ public class EnhancedOpenAIService {
             response.setId(savedEntity.getId());
             response.setCreatedAt(savedEntity.getCreatedAt());
             
-            // 7. Dashboard로 데이터 전송 (비동기)
+            // 7. Dashboard로 데이터 전송 (비동기) - 임시 비활성화
+            /*
             try {
                 dashboardApiClient.postClassificationData(savedEntity);
                 logger.info("Dashboard로 데이터 전송 완료: id={}", savedEntity.getId());
             } catch (Exception e) {
                 logger.warn("Dashboard 전송 실패 (메인 로직은 계속 진행): {}", e.getMessage());
             }
+            */
             
             logger.info("향상된 상담 처리 완료: id={}, category={}, confidence={}, processingTime={}s", 
                        response.getId(), 
