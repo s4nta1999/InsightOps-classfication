@@ -1,0 +1,51 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+# 서버 설정
+server:
+  port: ${SERVER_PORT:8080}
+
+# OpenAI 설정
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    timeout: 60000
+
+# External API 설정
+admin:
+  api:
+    base-url: ${ADMIN_API_BASE_URL:http://localhost:8081}
+
+dashboard:
+  api:
+    base-url: ${DASHBOARD_API_BASE_URL:http://localhost:8082}
+
+# 로깅 설정
+logging:
+  level:
+    com.hanacard: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
