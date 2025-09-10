@@ -1,26 +1,12 @@
 spring:
   application:
     name: microservice-classification
-  profiles:
-    active: dev  # 기본값은 개발 환경
-  web:
-    resources:
-      static-locations: classpath:/static/,classpath:/public/,file:./front/
-      cache:
-        period: 0
 
-# 공통 설정
 server:
-  port: 8080
+  port: ${PORT:8080}
 
-# OpenAI 설정
-openai:
-  api:
-    key: ${OPENAI_API_KEY:your-api-key-here}
-    model: ${OPENAI_MODEL:gpt-4o-mini}
-    timeout: 30000
-
-# 로깅 설정
 logging:
+  level:
+    com.hanacard: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
