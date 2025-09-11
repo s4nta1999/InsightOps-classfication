@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 향상된 OpenAI 서비스
@@ -349,9 +351,14 @@ public class EnhancedOpenAIService {
             entity.setCategoryId(response.getClassification().getCategoryId());
         }
         
-        // 분석 결과를 JSON으로 저장
+        // 분석 결과를 JSON으로 저장 (AI 분석 결과만)
         try {
-            String analysisJson = objectMapper.writeValueAsString(response);
+            // AI 분석 결과만 포함하는 객체 생성
+            Map<String, Object> analysisOnly = new HashMap<>();
+            analysisOnly.put("classification", response.getClassification());
+            analysisOnly.put("analysis", response.getAnalysis());
+            
+            String analysisJson = objectMapper.writeValueAsString(analysisOnly);
             entity.setAnalysisResult(analysisJson);
         } catch (Exception e) {
             logger.error("분석 결과 JSON 변환 실패", e);
