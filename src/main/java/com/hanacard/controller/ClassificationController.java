@@ -12,6 +12,7 @@ import com.hanacard.entity.ConsultingClassification;
 import com.hanacard.repository.ConsultingClassificationRepository;
 import com.hanacard.service.EnhancedOpenAIService;
 import com.hanacard.service.OpenAIService;
+import com.hanacard.service.VocBatchService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +46,16 @@ public class ClassificationController {
     private final OpenAIService openAIService;
     private final EnhancedOpenAIService enhancedOpenAIService;
     private final ConsultingClassificationRepository repository;
+    private final VocBatchService vocBatchService;
 
     public ClassificationController(OpenAIService openAIService, 
                                  EnhancedOpenAIService enhancedOpenAIService,
-                                 ConsultingClassificationRepository repository) {
+                                 ConsultingClassificationRepository repository,
+                                 VocBatchService vocBatchService) {
         this.openAIService = openAIService;
         this.enhancedOpenAIService = enhancedOpenAIService;
         this.repository = repository;
+        this.vocBatchService = vocBatchService;
     }
 
     /**
@@ -260,6 +264,10 @@ public class ClassificationController {
         endpoints.put("voc_normalized", "GET /api/normalization/voc_normalized?category_id={id}&limit={num}");
         endpoints.put("voc_list", "POST /api/normalized/voc-list");
         endpoints.put("voc_detail", "GET /api/normalized/voc-detail/{vocEventId}");
+        endpoints.put("batch_process", "POST /api/batch/process-voc?batchSize={num}");
+        endpoints.put("batch_clear", "DELETE /api/batch/clear-normalized");
+        endpoints.put("batch_status", "GET /api/batch/status");
+        endpoints.put("batch_cost", "GET /api/batch/cost-estimate");
         
         rootData.put("endpoints", endpoints);
         
@@ -390,6 +398,97 @@ public class ClassificationController {
             return "보안";
         } else {
             return "기타";
+        }
+    }
+
+    // ==================== 배치 처리 API ====================
+
+    /**
+     * VoC Raw 데이터 배치 처리
+     */
+    @PostMapping("/batch/process-voc")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> processVocBatch(
+            @RequestParam(defaultValue = "100") Integer batchSize) {
+        
+        try {
+            logger.info("VoC 배치 처리 요청: batchSize={}", batchSize);
+            
+            Map<String, Object> result = vocBatchService.processVocBatch(batchSize);
+            
+            logger.info("VoC 배치 처리 완료: {}", result);
+            
+            return ResponseEntity.ok(ApiResponse.success(result));
+            
+        } catch (Exception e) {
+            logger.error("VoC 배치 처리 중 오류 발생: batchSize={}", batchSize, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("배치 처리 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
+     * voc_normalized 테이블 초기화
+     */
+    @DeleteMapping("/batch/clear-normalized")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> clearNormalizedData() {
+        
+        try {
+            logger.info("voc_normalized 테이블 초기화 요청");
+            
+            Map<String, Object> result = vocBatchService.clearNormalizedData();
+            
+            logger.info("voc_normalized 테이블 초기화 완료: {}", result);
+            
+            return ResponseEntity.ok(ApiResponse.success(result));
+            
+        } catch (Exception e) {
+            logger.error("voc_normalized 테이블 초기화 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("테이블 초기화 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
+     * 배치 처리 상태 조회
+     */
+    @GetMapping("/batch/status")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getBatchStatus() {
+        
+        try {
+            logger.info("배치 처리 상태 조회 요청");
+            
+            Map<String, Object> status = vocBatchService.getBatchStatus();
+            
+            logger.info("배치 처리 상태 조회 완료: {}", status);
+            
+            return ResponseEntity.ok(ApiResponse.success(status));
+            
+        } catch (Exception e) {
+            logger.error("배치 처리 상태 조회 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("상태 조회 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
+     * 처리 비용 예상
+     */
+    @GetMapping("/batch/cost-estimate")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> estimateProcessingCost() {
+        
+        try {
+            logger.info("처리 비용 예상 요청");
+            
+            Map<String, Object> costEstimate = vocBatchService.estimateProcessingCost();
+            
+            logger.info("처리 비용 예상 완료: {}", costEstimate);
+            
+            return ResponseEntity.ok(ApiResponse.success(costEstimate));
+            
+        } catch (Exception e) {
+            logger.error("처리 비용 예상 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("비용 예상 계산 중 오류가 발생했습니다.", e.getMessage()));
         }
     }
 }
