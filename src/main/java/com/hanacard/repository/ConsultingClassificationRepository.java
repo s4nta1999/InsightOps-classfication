@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +32,9 @@ public interface ConsultingClassificationRepository extends JpaRepository<Consul
     
     // MailContents용 - category_id로 최근 데이터 조회
     Page<ConsultingClassification> findByCategoryIdOrderByCreatedAtDesc(String categoryId, Pageable pageable);
+    
+    // VoC 목록 조회용 - 날짜 범위로 조회
+    Page<ConsultingClassification> findByConsultingDateBetween(LocalDateTime startDateTime, LocalDateTime endDateTime, Pageable pageable);
     
     // MySQL JSON 기반 고급 쿼리들
     @Query(value = "SELECT * FROM voc_normalized " +

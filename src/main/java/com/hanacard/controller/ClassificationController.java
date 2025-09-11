@@ -4,6 +4,10 @@ import com.hanacard.dto.ApiResponse;
 import com.hanacard.dto.ClassificationRequest;
 import com.hanacard.dto.ClassificationResponse;
 import com.hanacard.dto.EnhancedClassificationResponse;
+import com.hanacard.dto.VocListRequest;
+import com.hanacard.dto.VocListResponse;
+import com.hanacard.dto.VocListItem;
+import com.hanacard.dto.VocDetailResponse;
 import com.hanacard.entity.ConsultingClassification;
 import com.hanacard.repository.ConsultingClassificationRepository;
 import com.hanacard.service.EnhancedOpenAIService;
@@ -20,10 +24,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 상담 분류 컨트롤러
@@ -252,9 +258,138 @@ public class ClassificationController {
         endpoints.put("health", "GET /api/health");
         endpoints.put("categories", "GET /api/categories");
         endpoints.put("voc_normalized", "GET /api/normalization/voc_normalized?category_id={id}&limit={num}");
+        endpoints.put("voc_list", "POST /api/normalized/voc-list");
+        endpoints.put("voc_detail", "GET /api/normalized/voc-detail/{vocEventId}");
         
         rootData.put("endpoints", endpoints);
         
         return ResponseEntity.ok(rootData);
+    }
+
+    /**
+     * VoC 목록 조회 API (Big Category 파이차트용)
+     */
+    @PostMapping("/normalized/voc-list")
+    public ResponseEntity<ApiResponse<VocListResponse>> getVocList(
+            @Valid @RequestBody VocListRequest request) {
+        
+        try {
+            logger.info("VoC 목록 조회 요청: startDate={}, endDate={}, page={}, size={}", 
+                       request.getStartDate(), request.getEndDate(), request.getPage(), request.getSize());
+            
+            // 날짜 범위 설정
+            LocalDateTime startDateTime = request.getStartDate().atStartOfDay();
+            LocalDateTime endDateTime = request.getEndDate().plusDays(1).atStartOfDay();
+            
+            // 페이지네이션 설정
+            Pageable pageable = PageRequest.of(request.getPage() - 1, request.getSize(), 
+                                             Sort.by("consultingDate").descending());
+            
+            // 데이터 조회
+            Page<ConsultingClassification> page = repository.findByConsultingDateBetween(
+                startDateTime, endDateTime, pageable);
+            
+            // DTO 변환
+            List<VocListItem> vocList = page.getContent().stream()
+                .map(this::convertToVocListItem)
+                .collect(Collectors.toList());
+            
+            VocListResponse response = new VocListResponse(
+                vocList, page.getTotalElements(), request.getPage(), request.getSize());
+            
+            logger.info("VoC 목록 조회 완료: totalCount={}, returnedCount={}", 
+                       page.getTotalElements(), vocList.size());
+            
+            return ResponseEntity.ok(ApiResponse.success(response));
+            
+        } catch (Exception e) {
+            logger.error("VoC 목록 조회 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("VoC 목록 조회 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
+     * VoC 상세보기 API
+     */
+    @GetMapping("/normalized/voc-detail/{vocEventId}")
+    public ResponseEntity<ApiResponse<VocDetailResponse>> getVocDetail(
+            @PathVariable Long vocEventId) {
+        
+        try {
+            logger.info("VoC 상세보기 요청: vocEventId={}", vocEventId);
+            
+            // 데이터 조회
+            ConsultingClassification entity = repository.findById(vocEventId)
+                .orElseThrow(() -> new RuntimeException("VoC 데이터를 찾을 수 없습니다: " + vocEventId));
+            
+            // DTO 변환
+            VocDetailResponse response = convertToVocDetailResponse(entity);
+            
+            logger.info("VoC 상세보기 완료: vocEventId={}", vocEventId);
+            
+            return ResponseEntity.ok(ApiResponse.success(response));
+            
+        } catch (Exception e) {
+            logger.error("VoC 상세보기 중 오류 발생: vocEventId={}", vocEventId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("VoC 상세보기 중 오류가 발생했습니다.", e.getMessage()));
+        }
+    }
+
+    /**
+     * ConsultingClassification을 VocListItem으로 변환
+     */
+    private VocListItem convertToVocListItem(ConsultingClassification entity) {
+        return new VocListItem(
+            entity.getId(),
+            entity.getSourceId(),
+            entity.getConsultingDate(),
+            getBigCategoryName(entity.getConsultingCategory()), // Big Category 매핑
+            entity.getConsultingCategory(),
+            entity.getClientAge().toString(),
+            entity.getClientGender(),
+            entity.getAnalysisResult()
+        );
+    }
+
+    /**
+     * ConsultingClassification을 VocDetailResponse로 변환
+     */
+    private VocDetailResponse convertToVocDetailResponse(ConsultingClassification entity) {
+        return new VocDetailResponse(
+            entity.getId(),
+            entity.getSourceId(),
+            entity.getConsultingDate(),
+            getBigCategoryName(entity.getConsultingCategory()), // Big Category 매핑
+            entity.getConsultingCategory(),
+            entity.getClientAge().toString(),
+            entity.getClientGender(),
+            entity.getAnalysisResult()
+        );
+    }
+
+    /**
+     * 상담 카테고리를 Big Category로 매핑
+     */
+    private String getBigCategoryName(String consultingCategory) {
+        if (consultingCategory == null) {
+            return "기타";
+        }
+        
+        // 카테고리별 Big Category 매핑
+        if (consultingCategory.contains("안내") || consultingCategory.contains("조회")) {
+            return "조회/안내";
+        } else if (consultingCategory.contains("신청") || consultingCategory.contains("해제")) {
+            return "신청/해제";
+        } else if (consultingCategory.contains("상품")) {
+            return "상품";
+        } else if (consultingCategory.contains("결제") || consultingCategory.contains("한도")) {
+            return "결제/한도";
+        } else if (consultingCategory.contains("도난") || consultingCategory.contains("분실")) {
+            return "보안";
+        } else {
+            return "기타";
+        }
     }
 }
